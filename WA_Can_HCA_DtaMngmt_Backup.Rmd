@@ -1,0 +1,237 @@
+---
+title: "WA_Can_HCA_DtaMngmt"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Set working directory
+setwd("C:/wa-cannabis-hca")
+
+# Clear workspace 
+rm(list = ls())
+
+# Load required libraries 
+library(survey)
+library(epiR)
+library(tidyverse)
+library(foreign)
+library(haven)
+library(table1)
+
+```
+
+
+```{r}
+#### Load in the WA-BRFSS Data ####
+
+# WRITING THE TEMP FILE IS ONLY NECCESARY IF YOU DO NOT HAVE THE FILE IN CSV FORMAT
+
+# Read in the data as dta
+#temp <- read_dta('data/MAS_2011_2020_v2.dta')
+
+# Re-write the file as a csv
+#write.csv(temp, 'data/WA_2011_2020_BRFSS.csv')
+
+#Remove the dta file
+#rm(temp)
+
+# Read in the newly created csv file for desired vars
+full <- read.csv("data/WA_2011_2020_BRFSS.csv", stringsAsFactors = F) %>%
+  select(year,
+         X_ststr,
+         X_llcpwt,
+         sex,
+         X_ageg5yr,
+         X_mrace1,
+         hispanc3,
+         educa,
+         employ1,
+         income2,
+         X_smoker3,
+         alcday5,
+         menthlth,
+         hlthpln1,
+         medcost,
+         mj30day
+         ) %>%
+  subset(year > 2014 & year < 2020) %>% # Years of interest given variable avail. are 2015 - 2019
+  subset(X_ageg5yr < 10 | X_ageg5yr == 14) # Removing individuals over 65 due to Medicare eligibility 
+
+# *Optional* Write to new file for memory efficiency 
+write.csv(full, "data/WA_2015_2019_BRFSS.csv")
+rm(list = ls())
+df <- read.csv("data/WA_2015_2019_BRFSS.csv")
+df$X <- NULL
+summary(df)
+
+# current tobacco yes/no, current alc yes/no, tobaco or alc current yes/no
+# find urban/rural variable
+
+```
+
+
+```{r}
+#### Assigning NA Values ####
+
+# Assigning the values of 7 or 9 "refusal" to NA within sex variable
+df$sex[df$sex == 7 | df$sex == 9] <- NA
+
+# Assigning the value of 14 to NA within the age variable
+df$X_ageg5yr[df$X_ageg5yr == 14] <- NA
+
+# Assigning the value of 77 and 99 to NA within the race variable
+df$X_mrace1[df$X_mrace1 == 77 | df$X_mrace1 == 99] <- NA
+
+# Assigning the value of 9 to NA within the edu. variable
+df$educa[df$educa == 9] <- NA
+
+# Assigning the value of 9 to NA within the employment variable
+df$employ1[df$employ1 == 9] <- NA
+
+# Assigning the value of 77 and 99 to NA within the income variable
+df$income2[df$income2 == 77 | df$income2 == 99] <- NA
+
+# Assigning the value of 9 to NA within the mental health variable
+df$menthlth[df$menthlth == 77 | df$menthlth == 99] <- NA
+
+# Assigning the value of 7 and 9 to NA within the insurance variable
+df$hlthpln1[df$hlthpln1 == 7 | df$hlthpln1 == 9] <- NA
+
+# Assigning the value of 7 and 9 to NA within the medical cost variable
+df$medcost[df$medcost == 7 | df$medcost == 9] <- NA
+
+# Assigning the value of 7 and 9 to NA within the smoking variable
+df$smokday2[df$smokday2 == 7 | df$smokday2 == 9] <- NA
+
+# Assigning the value of 777 and 999 to NA within the alc. variable
+df$alcday5[df$alcday5 == 777 | df$alcday5 == 999] <- NA
+
+# Assigning the value of 77 and 99 to NA within the cannabis variable
+df$mj30day[df$mj30day == 9] <- NA
+
+summary(df)
+
+```
+
+```{r}
+#### Dropping All Observations Where MJ or HCA is NA ####
+
+df <- df %>%
+  filter(!is.na(mj30day) & !is.na(medcost) & !is.na(menthlth)) 
+summary(df)
+
+# Recoding mental health variable 
+df$ment14d[df$menthlth == 88] <- 1
+df$ment14d[df$menthlth >= 1 & df$menthlth <= 13] <- 2
+df$ment14d[df$menthlth > 13 & df$menthlth <= 30] <- 3
+
+# Recoding cannabis usage variable
+df$anyuse[df$mjpast30 != 88] <- 1
+df$anyuse[df$mjpast30 == 88] <- 2
+
+df$hvyuse[df$mjpast30 >= 20 & df$mjpast30 <= 30] <- 1
+df$hvyuse[df$mjpast30 < 20] <- 2
+df$hvyuse[df$mjpast30 == 88] <- 3
+
+
+```
+
+```{r}
+#### Factoring Variables #### 
+
+# Gender Factor
+df$sex <- factor(df$sex,
+                 levels = c(1,2),
+                 labels = c("Male", "Female"),
+                 exclude = NULL)
+
+# Education Factor
+df$educa <- factor(df$educa,
+                   levels = c(1,2,3,4,5,6),
+                   labels = c("None or kindergarten only",
+                              "Grades 1-8 (Elementary)",
+                              "Grades 9-11 (Some high school)",
+                              "High school graduate or GED",
+                              "1-3 years College or technical school)",
+                              "4+ years College (College graduate)"),
+                   exclude = NULL)
+
+# Age Factors
+df$X_ageg5yr <- factor(df$X_ageg5yr, 
+                       levels = c(1,2,3,4,5,6,7,8,9),
+                       labels = c("Age 18 to 24", "Age 25 to 29",
+                                  "Age 30 to 34", "Age 35 to 39",
+                                  "Age 40 to 44", "Age 45 to 49",
+                                  "Age 50 to 54", "Age 55 to 59",
+                                  "Age 60 to 64"),
+                       exclude = NULL)
+
+# Employment Factors
+df$employ1 <- factor(df$employ1,
+                     levels = c(1,2,3,4,5,6,7,8),
+                     labels = c("Employed for wages", "Self-employed",
+                                "Out of work for 1 year or more", "Out of work < 1 year",
+                                "A homemaker", "A student", "Retired", "Unable to work"),
+                     exclude = NULL)
+
+# Income Factors
+df$income2 <- factor(df$income2,
+                     levels = c(1,2,3,4,5,6,7,8),
+                     labels = c("Less than $10,000", "Less than $15,000",
+                                "Less than $20,000", "Less than $25,000",
+                                "Less than $35,000", "Less than $50,000", 
+                                "Less than $75,000", "$75,000 or more"),
+                     exclude = NULL)
+
+# Smoking Factors
+df$smokday2 <- factor(df$smokday2,
+                      levels = c(1,2,3),
+                      labels = c("Every Day", "Some Days",
+                                 "Not at all"),
+                      exclude = NULL)
+
+# Mental Health Factors
+df$ment14d <- factor(df$ment14d,
+                      levels = c(1,2,3),
+                      labels = c("No days", "1-13 days",
+                                 "14+ Days"),
+                      exclude = NULL)
+
+# Health Insurance Factor
+df$hlthpln1 <- factor(df$hlthpln1,
+                      levels = c(1,2),
+                      labels = c("Yes", "No"),
+                      exclude = NULL)
+
+# Med Cost Factor
+df$medcost <- factor(df$medcost,
+                      levels = c(1,2),
+                      labels = c("Yes", "No"),
+                      exclude = NULL)
+
+# Cannabis Use Factor
+df$anyuse <- factor(df$anyuse,
+                      levels = c(1,2),
+                      labels = c("Yes", "No"),
+                      exclude = NULL)
+
+# Heavy Cannabis Use Factor
+df$hvyuse <- factor(df$hvyuse,
+                      levels = c(1,2,3),
+                      labels = c("Heavy usage", "Light usage", "No usage"),
+                      exclude = NULL)
+```
+
+```{r}
+
+print(table1(~ sex + educa + ment14d + medcost + hlthpln1 | anyuse, data=df))
+
+```
+
+
+
+
+
+
