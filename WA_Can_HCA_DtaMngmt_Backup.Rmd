@@ -40,12 +40,13 @@ library(table1)
 # Read in the newly created csv file for desired vars
 full <- read.csv("data/WA_2011_2020_BRFSS.csv", stringsAsFactors = F) %>%
   select(year,
+         zipcode,
+         zipcode1,
          X_ststr,
          X_llcpwt,
          sex,
          X_ageg5yr,
-         X_mrace1,
-         hispanc3,
+         X_racegr3,
          educa,
          employ1,
          income2,
@@ -66,9 +67,6 @@ df <- read.csv("data/WA_2015_2019_BRFSS.csv")
 df$X <- NULL
 summary(df)
 
-# current tobacco yes/no, current alc yes/no, tobaco or alc current yes/no
-# find urban/rural variable
-
 ```
 
 
@@ -81,8 +79,8 @@ df$sex[df$sex == 7 | df$sex == 9] <- NA
 # Assigning the value of 14 to NA within the age variable
 df$X_ageg5yr[df$X_ageg5yr == 14] <- NA
 
-# Assigning the value of 77 and 99 to NA within the race variable
-df$X_mrace1[df$X_mrace1 == 77 | df$X_mrace1 == 99] <- NA
+# Assigning the value of 9 to NA within the race/Eth variable
+df$X_racegr3[df$X_racegr3 == 9] <- NA
 
 # Assigning the value of 9 to NA within the edu. variable
 df$educa[df$educa == 9] <- NA
@@ -103,13 +101,13 @@ df$hlthpln1[df$hlthpln1 == 7 | df$hlthpln1 == 9] <- NA
 df$medcost[df$medcost == 7 | df$medcost == 9] <- NA
 
 # Assigning the value of 7 and 9 to NA within the smoking variable
-df$smokday2[df$smokday2 == 7 | df$smokday2 == 9] <- NA
+df$X_smoker3[df$X_smoker3 == 9] <- NA
 
 # Assigning the value of 777 and 999 to NA within the alc. variable
 df$alcday5[df$alcday5 == 777 | df$alcday5 == 999] <- NA
 
 # Assigning the value of 77 and 99 to NA within the cannabis variable
-df$mj30day[df$mj30day == 9] <- NA
+df$mj30day[df$mj30day == 7 | df$mj30day == 9] <- NA
 
 summary(df)
 
@@ -119,22 +117,34 @@ summary(df)
 #### Dropping All Observations Where MJ or HCA is NA ####
 
 df <- df %>%
-  filter(!is.na(mj30day) & !is.na(medcost) & !is.na(menthlth)) 
+  filter(!is.na(mj30day) & !is.na(medcost) & !is.na(menthlth)) %>% # filter out any missingness associated with exposure/outcome
+  rename(zipcodeTemp1 = zipcode, zipcodeTemp2 = zipcode1) %>% # Rename zipcode variables
+  mutate(zipcode = coalesce(zipcodeTemp1, zipcodeTemp2)) %>% # Combine the zipcode variables across the two columns
+  select(-c(zipcodeTemp1, zipcodeTemp2)) %>% # Drop old zipcode variables
+  select(zipcode, everything()) # Move updated variable to the beginning of the dataframe
+
 summary(df)
 
 # Recoding mental health variable 
-df$ment14d[df$menthlth == 88] <- 1
-df$ment14d[df$menthlth >= 1 & df$menthlth <= 13] <- 2
-df$ment14d[df$menthlth > 13 & df$menthlth <= 30] <- 3
+df$ment14d[df$menthlth == 88] <- 2 # No poor mental health days in the past 30 days
+df$ment14d[df$menthlth >= 1 & df$menthlth <= 13] <- 2 # Between 1 and 13 days of poor mental health in past 30 days
+df$ment14d[df$menthlth > 13 & df$menthlth <= 30] <- 1 # Between 13 and 30 days of poor mental health in past 30 days
 
-# Recoding cannabis usage variable
-df$anyuse[df$mjpast30 != 88] <- 1
-df$anyuse[df$mjpast30 == 88] <- 2
+# Recoding tobacco usage variable
+df$curSmk[df$X_smoker3 == 1 | df$X_smoker3 == 2] <- 1 # Values 1 and 2 correspond to current smoker
+df$curSmk[df$X_smoker3 == 3 | df$X_smoker3 == 4] <- 2 # Either a former smoker or never smoked
+df$curSmk[is.na(df$X_smoker3)] <- NA
 
-df$hvyuse[df$mjpast30 >= 20 & df$mjpast30 <= 30] <- 1
-df$hvyuse[df$mjpast30 < 20] <- 2
-df$hvyuse[df$mjpast30 == 88] <- 3
+# Recoding the alc usage variable
+df$curAlc[df$alcday5 > 100 & df$alcday5 < 231] <- 1 # Consumed alcohol in the past month
+df$curAlc[df$alcday5 > 200 & df$alcday5 < 231] <- 2 # Consumed alcohol in the past month
+df$curAlc[df$alcday5 == 888] <- 3 # Consumed no alcohol in past 30 days
+df$curAlc[is.na(df$alcday5)] <- NA
 
+# Recoding current smoker + current alc usage
+df$curAlcSmk[df$curSmk == 1 & (df$curAlc == 1 | df$curAlc == 2)] <- 1
+df$curAlcSmk[df$curSmk == 2 | df$curAlc == 3] <- 2
+df$curAlcSmk[is.na(df$curAlc) | is.na(df$curSmk)] <- NA
 
 ```
 
@@ -156,6 +166,16 @@ df$educa <- factor(df$educa,
                               "High school graduate or GED",
                               "1-3 years College or technical school)",
                               "4+ years College (College graduate)"),
+                   exclude = NULL)
+
+# Race/Ethnicity Factor
+df$X_racegr3 <- factor(df$X_racegr3,
+                   levels = c(1,2,3,4,5),
+                   labels = c("White only",
+                              "Black only",
+                              "Other race only",
+                              "Multiracial",
+                              "Hispanic"),
                    exclude = NULL)
 
 # Age Factors
@@ -185,18 +205,28 @@ df$income2 <- factor(df$income2,
                                 "Less than $75,000", "$75,000 or more"),
                      exclude = NULL)
 
-# Smoking Factors
-df$smokday2 <- factor(df$smokday2,
+# Currant Smoker Factors
+df$curSmk <- factor(df$curSmk,
+                      levels = c(1,2),
+                      labels = c("Yes", "No"),
+                      exclude = NULL)
+
+# Current Alc. Factors
+df$curAlc <- factor(df$curAlc,
                       levels = c(1,2,3),
-                      labels = c("Every Day", "Some Days",
-                                 "Not at all"),
+                      labels = c("Within past week", "Within past month", "None in past month"),
+                      exclude = NULL)
+
+# Current Alc. Factors
+df$curAlcSmk <- factor(df$curAlcSmk,
+                      levels = c(1,2),
+                      labels = c("Yes", "No"),
                       exclude = NULL)
 
 # Mental Health Factors
 df$ment14d <- factor(df$ment14d,
-                      levels = c(1,2,3),
-                      labels = c("No days", "1-13 days",
-                                 "14+ Days"),
+                      levels = c(1,2),
+                      labels = c("14+ days", "Less than 14 days"),
                       exclude = NULL)
 
 # Health Insurance Factor
@@ -212,21 +242,16 @@ df$medcost <- factor(df$medcost,
                       exclude = NULL)
 
 # Cannabis Use Factor
-df$anyuse <- factor(df$anyuse,
+df$mj30day <- factor(df$mj30day,
                       levels = c(1,2),
                       labels = c("Yes", "No"),
                       exclude = NULL)
 
-# Heavy Cannabis Use Factor
-df$hvyuse <- factor(df$hvyuse,
-                      levels = c(1,2,3),
-                      labels = c("Heavy usage", "Light usage", "No usage"),
-                      exclude = NULL)
 ```
 
 ```{r}
 
-print(table1(~ sex + educa + ment14d + medcost + hlthpln1 | anyuse, data=df))
+print(table1(~ X_ageg5yr + sex + educa + ment14d + medcost + hlthpln1 + curAlcSmk + X_racegr3 + income2 + employ1 | mj30day, data=df))
 
 ```
 
