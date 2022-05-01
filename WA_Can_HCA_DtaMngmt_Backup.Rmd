@@ -29,16 +29,27 @@ library(table1)
 # WRITING THE TEMP FILE IS ONLY NECCESARY IF YOU DO NOT HAVE THE FILE IN CSV FORMAT
 
 # Read in the data as dta
-#temp <- read_dta('data/MAS_2011_2020_v2.dta')
+temp <- read_dta('data/MAS_2011_2020_v2.dta') %>%
+    subset(year > 2014 & year < 2020) # Years of interest given variable avail. are 2015 - 2019
+
+# Find the proportion of observations in each year
+tc <- table(temp$year) %>%
+  prop.table() # get the proportion of each year's observations 
+
+temp$'_llcpwt'[temp$year == 2015] <- temp$'_llcpwt'[temp$year == 2015] * tc[1] # Re-weighting 2015
+temp$'_llcpwt'[temp$year == 2016] <- temp$'_llcpwt'[temp$year == 2016] * tc[2] # Re-weighting 2016
+temp$'_llcpwt'[temp$year == 2017] <- temp$'_llcpwt'[temp$year == 2017] * tc[3] # Re-weighting 2017
+temp$'_llcpwt'[temp$year == 2018] <- temp$'_llcpwt'[temp$year == 2018] * tc[4] # Re-weighting 2018
+temp$'_llcpwt'[temp$year == 2019] <- temp$'_llcpwt'[temp$year == 2019] * tc[5] # Re-weighting 2019
 
 # Re-write the file as a csv
-#write.csv(temp, 'data/WA_2011_2020_BRFSS.csv')
+write.csv(temp, 'data/WA_2015_2019_BRFSS.csv')
 
 #Remove the dta file
-#rm(temp)
+rm(temp)
 
 # Read in the newly created csv file for desired vars
-full <- read.csv("data/WA_2011_2020_BRFSS.csv", stringsAsFactors = F) %>%
+full <- read.csv("data/WA_2015_2019_BRFSS.csv", stringsAsFactors = F) %>%
   select(year,
          zipcode,
          zipcode1,
@@ -57,18 +68,16 @@ full <- read.csv("data/WA_2011_2020_BRFSS.csv", stringsAsFactors = F) %>%
          medcost,
          mj30day
          ) %>%
-  subset(year > 2014 & year < 2020) %>% # Years of interest given variable avail. are 2015 - 2019
   subset(X_ageg5yr < 10 | X_ageg5yr == 14) # Removing individuals over 65 due to Medicare eligibility 
 
 # *Optional* Write to new file for memory efficiency 
-write.csv(full, "data/WA_2015_2019_BRFSS.csv")
+write.csv(full, "data/WA_2015_2019_BRFSS_Sub.csv")
 rm(list = ls())
-df <- read.csv("data/WA_2015_2019_BRFSS.csv")
+df <- read.csv("data/WA_2015_2019_BRFSS_Sub.csv")
 df$X <- NULL
 summary(df)
 
 ```
-
 
 ```{r}
 #### Assigning NA Values ####
@@ -251,7 +260,7 @@ df$mj30day <- factor(df$mj30day,
 
 ```{r}
 
-print(table1(~ X_ageg5yr + sex + educa + ment14d + medcost + hlthpln1 + curAlcSmk + X_racegr3 + income2 + employ1 | mj30day, data=df))
+print(table1(~ X_ageg5yr + sex + educa + ment14d + medcost + hlthpln1 + curAlcSmk + X_racegr3 + income2 + employ1 | mj30day, data=df, overall = "Total"))
 
 ```
 
