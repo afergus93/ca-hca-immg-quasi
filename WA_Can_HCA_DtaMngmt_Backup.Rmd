@@ -145,7 +145,7 @@ df$curSmk[df$X_smoker3 == 3 | df$X_smoker3 == 4] <- 2 # Either a former smoker o
 df$curSmk[is.na(df$X_smoker3)] <- NA
 
 # Recoding the alc usage variable
-df$curAlc[df$alcday5 > 100 & df$alcday5 < 231] <- 1 # Consumed alcohol in the past month
+df$curAlc[df$alcday5 > 100 & df$alcday5 < 108] <- 1 # Consumed alcohol in the past week
 df$curAlc[df$alcday5 > 200 & df$alcday5 < 231] <- 2 # Consumed alcohol in the past month
 df$curAlc[df$alcday5 == 888] <- 3 # Consumed no alcohol in past 30 days
 df$curAlc[is.na(df$alcday5)] <- NA
