@@ -19,6 +19,7 @@ library(tidyverse)
 library(foreign)
 library(haven)
 library(table1)
+library(kableExtra)
 
 ```
 
@@ -217,7 +218,7 @@ df$income2 <- factor(df$income2,
 # Currant Smoker Factors
 df$curSmk <- factor(df$curSmk,
                       levels = c(1,2),
-                      labels = c("Yes", "No"),
+                      labels = c("Current smoker", "Non-smoker"),
                       exclude = NULL)
 
 # Current Alc. Factors
@@ -241,7 +242,7 @@ df$ment14d <- factor(df$ment14d,
 # Health Insurance Factor
 df$hlthpln1 <- factor(df$hlthpln1,
                       levels = c(1,2),
-                      labels = c("Yes", "No"),
+                      labels = c("Insured", "Uninsured"),
                       exclude = NULL)
 
 # Med Cost Factor
@@ -259,8 +260,52 @@ df$mj30day <- factor(df$mj30day,
 ```
 
 ```{r}
+#### Creating Labels for each variable ####
 
-print(table1(~ X_ageg5yr + sex + educa + ment14d + medcost + hlthpln1 + curAlcSmk + X_racegr3 + income2 + employ1 | mj30day, data=df, overall = "Total"))
+# Creating age label
+label(df$X_ageg5yr) <- "Age group (yrs)"
+
+# Creating gender label 
+label(df$sex) <- "Gender"
+
+# Creating race label
+label(df$X_racegr3) <- "Race/Ethnicity"
+
+# Creating education label
+label(df$educa) <- "Education"
+
+# Creating income label 
+label(df$income2) <- "Income"
+
+# Creating health insurance label
+label(df$hlthpln1) <- "Health insurance status"
+
+# Creating health cost label
+label(df$medcost) <- "Delay medical care due to cost in past year"
+
+# Creating mental health label
+label(df$ment14d) <- "Poor mental health in past month"
+
+# Creating alcohol consumption label
+label(df$curAlc) <- "Alcohol consumption"
+
+# Creating smoking status label
+label(df$curSmk) <- "Smoking status"
+
+# Creating cannabis usage label
+label(df$mj30day) <- "Cannabis use in past month"
+
+```
+
+```{r}
+
+T1 <- table1(~ X_ageg5yr + sex + X_racegr3 + educa + income2 + hlthpln1 + medcost + ment14d + curAlc + curSmk | mj30day, data=df, overall = "Total")
+
+T1 %>%
+  kbl(caption = "Table 1: Characteristics of past month cannabis users") %>%
+  kable_classic(full_width = F, html_font = "Arial") %>%
+  save_kable(file = "table1.html", self_contained = T)
+
 
 ```
 
