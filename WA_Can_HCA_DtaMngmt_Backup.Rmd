@@ -22,6 +22,7 @@ library(table1)
 library(kableExtra)
 library(weights)
 library(gtsummary)
+library(gt)
 
 ```
 
@@ -63,7 +64,7 @@ full <- read.csv("data/WA_2015_2019_BRFSS.csv", stringsAsFactors = F) %>%
          X_racegr3,
          educa,
          employ1,
-         income2,
+         X_incomg,
          X_smoker3,
          alcday5,
          menthlth,
@@ -101,7 +102,7 @@ df$educa[df$educa == 9] <- NA
 df$employ1[df$employ1 == 9] <- NA
 
 # Assigning the value of 77 and 99 to NA within the income variable
-df$income2[df$income2 == 77 | df$income2 == 99] <- NA
+df$X_incomg[df$X_incomg == 9] <- NA
 
 # Assigning the value of 9 to NA within the mental health variable
 df$menthlth[df$menthlth == 77 | df$menthlth == 99] <- NA
@@ -158,6 +159,13 @@ df$curAlcSmk[df$curSmk == 1 & (df$curAlc == 1 | df$curAlc == 2)] <- 1
 df$curAlcSmk[df$curSmk == 2 | df$curAlc == 3] <- 2
 df$curAlcSmk[is.na(df$curAlc) | is.na(df$curSmk)] <- NA
 
+# Recoding the Education Variable
+df$edu[df$educa < 4] <- 1 # Did not graduate high school
+df$edu[df$educa == 4] <- 2 # Graduated high school
+df$edu[df$educa == 5] <- 3 # Some college or tech school
+df$edu[df$educa == 6] <- 4 # Graduated from college/tech school
+df$edu[is.na(df$educa)] <- NA
+
 ```
 
 ```{r}
@@ -170,14 +178,12 @@ df$sex <- factor(df$sex,
                  exclude = NULL)
 
 # Education Factor  CREATE NEW VARIABLE
-df$educa <- factor(df$educa,
-                   levels = c(1,2,3,4,5,6),
-                   labels = c("None or kindergarten only",
-                              "Grades 1-8 (Elementary)",
-                              "Grades 9-11 (Some high school)",
-                              "High school graduate or GED",
-                              "1-3 years College or technical school)",
-                              "4+ years College (College graduate)"),
+df$edu <- factor(df$edu,
+                   levels = c(1,2,3,4),
+                   labels = c("Did not graduate high school",
+                              "High school graduate",
+                              "Some college or tech school",
+                              "Graduated college or tech school"),
                    exclude = NULL)
 
 # Race/Ethnicity Factor
@@ -209,12 +215,9 @@ df$employ1 <- factor(df$employ1,
                      exclude = NULL)
 
 # Income Factors CREATE NEW VARIABLE
-df$income2 <- factor(df$income2,
-                     levels = c(1,2,3,4,5,6,7,8),
-                     labels = c("< $10,000", "Less than $15,000",
-                                "Less than $20,000", "Less than $25,000",
-                                "Less than $35,000", "Less than $50,000", 
-                                "Less than $75,000", "> $75,000"),
+df$X_incomg <- factor(df$X_incomg,
+                     levels = c(1,2,3,4,5),
+                     labels = c("< $15,000", "$15,000-$24,999", "$25,000-$34,999", "$35,000-$49,999", "> $50,000"),
                      exclude = NULL)
 
 # Currant Smoker Factors
@@ -243,8 +246,8 @@ df$ment14d <- factor(df$ment14d,
 
 # Health Insurance Factor
 df$hlthpln1 <- factor(df$hlthpln1,
-                      levels = c(1,2),
-                      labels = c("Insured", "Uninsured"),
+                      levels = c(2,1),
+                      labels = c("Yes", "No"),
                       exclude = NULL)
 
 # Med Cost Factor
@@ -256,7 +259,7 @@ df$medcost <- factor(df$medcost,
 # Cannabis Use Factor
 df$mj30day <- factor(df$mj30day,
                       levels = c(1,2),
-                      labels = c("Yes", "No"),
+                      labels = c("Cannabis use in past month", "No cannabis use in past month"),
                       exclude = NULL)
 
 ```
@@ -274,13 +277,13 @@ label(df$sex) <- "Gender"
 label(df$X_racegr3) <- "Race/Ethnicity"
 
 # Creating education label
-label(df$educa) <- "Education"
+label(df$edu) <- "Education"
 
 # Creating income label 
-label(df$income2) <- "Income"
+label(df$X_incomg) <- "Income"
 
 # Creating health insurance label
-label(df$hlthpln1) <- "Health insurance status"
+label(df$hlthpln1) <- "Uninsured"
 
 # Creating health cost label
 label(df$medcost) <- "Delay medical care due to cost in past year"
@@ -305,28 +308,21 @@ design <- svydesign(
   id = ~1,
   strata = ~X_ststr,
   weights = ~X_llcpwt,
-  data = df)
+  data = df) 
 
+t1 <- tbl_svysummary(design, by = mj30day, 
+               include = c(X_ageg5yr, sex, X_racegr3, edu, X_incomg, hlthpln1, medcost, ment14d, curAlc, curSmk),
+               statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
+  modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
+  add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
+  modify_caption("**Table 1. Past Month Cannabis User Characteristics**") %>%
+  bold_labels()
 
-
-```
-
-```{r}
-
-tbl_svysummary_ex1 <-
-  survey::svydesign(~1, data = as.data.frame(Titanic), weights = ~Freq) %>%
-  tbl_svysummary(by = Survived, percent = "row", include = c(Class, Age))
-
-T1 <- table1(~ X_ageg5yr + sex + X_racegr3 + educa + income2 + hlthpln1 + medcost + ment14d + curAlc + curSmk | mj30day, data=df, overall = "Total")
-
-T1 %>%
-  kbl(caption = "Table 1: Characteristics of past month cannabis users") %>%
-  kable_classic(full_width = F, html_font = "Arial") %>%
-  save_kable(file = "table1.html", self_contained = T)
-
+t1 %>%
+  as_gt() %>%
+  gtsave("Table1_CA_WA.html")
 
 ```
-
 
 
 
