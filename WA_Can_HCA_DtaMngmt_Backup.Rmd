@@ -60,7 +60,7 @@ full <- read.csv("data/WA_2015_2019_BRFSS.csv", stringsAsFactors = F) %>%
          X_ststr,
          X_llcpwt,
          sex,
-         X_ageg5yr,
+         X_age_g,
          X_racegr3,
          educa,
          employ1,
@@ -72,7 +72,7 @@ full <- read.csv("data/WA_2015_2019_BRFSS.csv", stringsAsFactors = F) %>%
          medcost,
          mj30day
          ) %>%
-  subset(X_ageg5yr < 10 | X_ageg5yr == 14) # Removing individuals over 65 due to Medicare eligibility 
+  subset(X_age_g < 6) # Removing individuals over 65 due to Medicare eligibility 
 
 # *Optional* Write to new file for memory efficiency 
 write.csv(full, "data/WA_2015_2019_BRFSS_Sub.csv")
@@ -88,9 +88,6 @@ summary(df)
 
 # Assigning the values of 7 or 9 "refusal" to NA within sex variable
 df$sex[df$sex == 7 | df$sex == 9] <- NA
-
-# Assigning the value of 14 to NA within the age variable
-df$X_ageg5yr[df$X_ageg5yr == 14] <- NA
 
 # Assigning the value of 9 to NA within the race/Eth variable
 df$X_racegr3[df$X_racegr3 == 9] <- NA
@@ -197,13 +194,11 @@ df$X_racegr3 <- factor(df$X_racegr3,
                    exclude = NULL)
 
 # Age Factors
-df$X_ageg5yr <- factor(df$X_ageg5yr, 
-                       levels = c(1,2,3,4,5,6,7,8,9),
-                       labels = c("18-24", "25-29",
-                                  "30-34", "35-39",
-                                  "40-44", "45-49",
-                                  "50-54", "55-59",
-                                  "60-64"),
+df$X_age_g <- factor(df$X_age_g, 
+                       levels = c(1,2,3,4,5),
+                       labels = c("18-24", "25-34",
+                                  "35-44", "45-54",
+                                  "55-64"),
                        exclude = NULL)
 
 # Employment Factors
@@ -268,7 +263,7 @@ df$mj30day <- factor(df$mj30day,
 #### Creating Labels for each variable ####
 
 # Creating age label
-label(df$X_ageg5yr) <- "Age group (yrs)"
+label(df$X_age_g) <- "Age group (yrs)"
 
 # Creating gender label 
 label(df$sex) <- "Gender"
@@ -295,7 +290,7 @@ label(df$ment14d) <- "Poor mental health in past month"
 label(df$curAlc) <- "Alcohol consumption"
 
 # Creating smoking status label
-label(df$curSmk) <- "Smoking status"
+label(df$curSmk) <- "Tobacco smoking status"
 
 # Creating cannabis usage label
 label(df$mj30day) <- "Cannabis use in past month"
@@ -311,7 +306,7 @@ design <- svydesign(
   data = df) 
 
 t1 <- tbl_svysummary(design, by = mj30day, 
-               include = c(X_ageg5yr, sex, X_racegr3, edu, X_incomg, hlthpln1, medcost, ment14d, curAlc, curSmk),
+               include = c(X_age_g, sex, X_racegr3, edu, X_incomg, hlthpln1, medcost, ment14d, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
   add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
@@ -323,6 +318,8 @@ t1 %>%
   gtsave("Table1_CA_WA.html")
 
 ```
+
+
 
 
 
