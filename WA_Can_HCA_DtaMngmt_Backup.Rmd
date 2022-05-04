@@ -61,7 +61,8 @@ full <- read.csv("data/WA_2015_2019_BRFSS.csv", stringsAsFactors = F) %>%
          X_llcpwt,
          sex,
          X_age_g,
-         X_racegr3,
+         X_mrace1,
+         X_hispanc,
          educa,
          employ1,
          X_incomg,
@@ -89,8 +90,11 @@ summary(df)
 # Assigning the values of 7 or 9 "refusal" to NA within sex variable
 df$sex[df$sex == 7 | df$sex == 9] <- NA
 
-# Assigning the value of 9 to NA within the race/Eth variable
-df$X_racegr3[df$X_racegr3 == 9] <- NA
+# Assigning the value of 9 to NA within the race variable
+df$X_mrace1[df$X_mrace1 == 77 | df$X_mrace1 == 99] <- NA
+
+# Assigning the value of 9 to NA within the Eth variable
+df$X_hispanc[df$X_hispanc == 9] <- NA
 
 # Assigning the value of 9 to NA within the edu. variable
 df$educa[df$educa == 9] <- NA
@@ -183,14 +187,23 @@ df$edu <- factor(df$edu,
                               "Graduated college or tech school"),
                    exclude = NULL)
 
-# Race/Ethnicity Factor
-df$X_racegr3 <- factor(df$X_racegr3,
-                   levels = c(1,2,3,4,5),
-                   labels = c("White only",
-                              "Black only",
-                              "Other race only",
+# Race Factor
+df$X_mrace1 <- factor(df$X_mrace1,
+                   levels = c(4,2,7,6,3,5,1),
+                   labels = c("Asian",
+                              "Black or African American",
                               "Multiracial",
-                              "Hispanic"),
+                              "Native American",
+                              "Other race",
+                              "Pacific Islander",
+                              "White"),
+                   exclude = NULL)
+
+# Ethnicity Factor
+df$X_hispanc <- factor(df$X_hispanc,
+                   levels = c(1,2),
+                   labels = c("Yes",
+                              "No"),
                    exclude = NULL)
 
 # Age Factors
@@ -269,7 +282,10 @@ label(df$X_age_g) <- "Age group (yrs)"
 label(df$sex) <- "Gender"
 
 # Creating race label
-label(df$X_racegr3) <- "Race/Ethnicity"
+label(df$X_mrace1) <- "Race"
+
+# Creating ethnicity label
+label(df$X_hispanc) <- "Hispanic, Latino/a, or Spanish origin"
 
 # Creating education label
 label(df$edu) <- "Education"
@@ -306,7 +322,7 @@ design <- svydesign(
   data = df) 
 
 t1 <- tbl_svysummary(design, by = mj30day, 
-               include = c(X_age_g, sex, X_racegr3, edu, X_incomg, hlthpln1, medcost, ment14d, curAlc, curSmk),
+               include = c(X_age_g, sex, X_mrace1, X_hispanc, edu, X_incomg, hlthpln1, medcost, ment14d, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
   add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
