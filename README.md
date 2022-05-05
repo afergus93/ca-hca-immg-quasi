@@ -3,7 +3,7 @@ Authors: Serena Santoni, Daniel J Cockson, Aaron JR Ferguson
 
 Cross-sectional analysis of the association between poor mental health days, difficulty accessing healthcare and cannabis use among adults in Washington State.
 
-# Primary Aim
+## Primary Aim
 More info coming soon!
 
 ## Hypotheses
