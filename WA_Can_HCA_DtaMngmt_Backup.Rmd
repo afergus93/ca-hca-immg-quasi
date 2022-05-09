@@ -80,7 +80,7 @@ write.csv(full, "data/WA_2015_2019_BRFSS_Sub.csv")
 rm(list = ls())
 df <- read.csv("data/WA_2015_2019_BRFSS_Sub.csv")
 df$X <- NULL
-summary(df)
+# summary(df)
 
 ```
 
@@ -123,7 +123,7 @@ df$alcday5[df$alcday5 == 777 | df$alcday5 == 999] <- NA
 # Assigning the value of 77 and 99 to NA within the cannabis variable
 df$mj30day[df$mj30day == 7 | df$mj30day == 9] <- NA
 
-summary(df)
+# summary(df)
 
 ```
 
@@ -137,7 +137,7 @@ df <- df %>%
   select(-c(zipcodeTemp1, zipcodeTemp2)) %>% # Drop old zipcode variables
   select(zipcode, everything()) # Move updated variable to the beginning of the dataframe
 
-summary(df)
+# summary(df)
 
 # Recoding mental health variable 
 df$ment14d[df$menthlth == 88] <- 2 # No poor mental health days in the past 30 days
@@ -167,6 +167,17 @@ df$edu[df$educa == 5] <- 3 # Some college or tech school
 df$edu[df$educa == 6] <- 4 # Graduated from college/tech school
 df$edu[is.na(df$educa)] <- NA
 
+# Creating new Race/Eth. variable
+df$race[df$X_mrace1 == 4 & df$X_hispanc != 1] <- 1 # Non-hispanic Asian
+df$race[df$X_mrace1 == 2 & df$X_hispanc != 1] <- 2 # Non-hispanic Black or African American
+df$race[df$X_hispanc == 1] <- 3 # Hispanic/Latino/a
+df$race[df$X_mrace1 == 7 & df$X_hispanc != 1] <- 4 # Non-hispanic Multiracial
+df$race[df$X_mrace1 == 6 & df$X_hispanc != 1] <- 5 # Non-hispanic Native American
+df$race[df$X_mrace1 == 3 & df$X_hispanc != 1] <- 6 # Non-hispanic other race
+df$race[df$X_mrace1 == 5 & df$X_hispanc != 1] <- 7 # Non-hispanic Pacific Islander
+df$race[df$X_mrace1 == 1 & df$X_hispanc != 1] <- 8 # Non-hispanic White
+df$race[is.na(df$X_mrace1) & is.na(df$X_hispanc)] <- NA
+
 ```
 
 ```{r}
@@ -188,22 +199,16 @@ df$edu <- factor(df$edu,
                    exclude = NULL)
 
 # Race Factor
-df$X_mrace1 <- factor(df$X_mrace1,
-                   levels = c(4,2,7,6,3,5,1),
-                   labels = c("Asian",
-                              "Black or African American",
-                              "Multiracial",
-                              "Native American",
-                              "Other race",
-                              "Pacific Islander",
-                              "White"),
-                   exclude = NULL)
-
-# Ethnicity Factor
-df$X_hispanc <- factor(df$X_hispanc,
-                   levels = c(1,2),
-                   labels = c("Yes",
-                              "No"),
+df$race <- factor(df$race,
+                   levels = c(1,2,3,4,5,6,7,8),
+                   labels = c("Non-Hispanic Asian",
+                              "Non-Hispanic Black or African American",
+                              "Hispanic, Latino/a, or Spanish origin",
+                              "Non-Hispanic Multiracial",
+                              "Non-Hispanic Native American",
+                              "Non-Hispanic Other race",
+                              "Non-Hispanic Pacific Islander",
+                              "Non-Hispanic White"),
                    exclude = NULL)
 
 # Age Factors
@@ -282,10 +287,7 @@ label(df$X_age_g) <- "Age group (yrs)"
 label(df$sex) <- "Gender"
 
 # Creating race label
-label(df$X_mrace1) <- "Race"
-
-# Creating ethnicity label
-label(df$X_hispanc) <- "Hispanic, Latino/a, or Spanish origin"
+label(df$race) <- "Race/Ethnicity"
 
 # Creating education label
 label(df$edu) <- "Education"
@@ -315,14 +317,15 @@ label(df$mj30day) <- "Cannabis use in past month"
 
 ```{r}
 
-design <- svydesign(
+db <- svydesign(
   id = ~1,
   strata = ~X_ststr,
   weights = ~X_llcpwt,
-  data = df) 
+  data = df, 
+  nest = TRUE) 
 
-t1 <- tbl_svysummary(design, by = mj30day, 
-               include = c(X_age_g, sex, X_mrace1, X_hispanc, edu, X_incomg, hlthpln1, medcost, ment14d, curAlc, curSmk),
+t1 <- tbl_svysummary(db, by = mj30day, 
+               include = c(X_age_g, sex, race, edu, X_incomg, hlthpln1, medcost, ment14d, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
   add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
@@ -334,6 +337,43 @@ t1 %>%
   gtsave("Table1_CA_WA.html")
 
 ```
+
+```{r}
+#### Initial Strata ####
+df$smk_alc <- case_when(!is.na(df$curSmk) & 
+                        !is.na(df$curAlc) ~
+                        paste0(df$curSmk, "_", df$curAlc)) 
+
+strata_1 <- with(subset(df, medcost == "No"),
+                 table(ment14d, mj30day, smk_alc))
+epi.2by2(strata_1, method = "cross.sectional")
+
+strata_2 <- with(subset(df, medcost == "Yes"),
+                 table(ment14d, mj30day, smk_alc))
+epi.2by2(strata_2, method = "cross.sectional")
+
+
+
+strat_1 <- with(subset(df, medcost == "No"),
+                table(ment14d, mj30day))
+
+strat_2 <- with(subset(df, medcost == "Yes"),
+                table(ment14d, mj30day))
+
+epi.2by2(strat_1, method = "cross.sectional")
+epi.2by2(strat_2, method = "cross.sectional")
+
+strat_1 <- with(subset(df, hlthpln1 == "No"),
+                table(ment14d, mj30day))
+
+strat_2 <- with(subset(df, hlthpln1 == "Yes"),
+                table(ment14d, mj30day))
+
+epi.2by2(strat_1, method = "cross.sectional")
+epi.2by2(strat_2, method = "cross.sectional")
+
+```
+
 
 
 
