@@ -71,6 +71,7 @@ full <- read.csv("data/WA_2015_2019_BRFSS.csv", stringsAsFactors = F) %>%
          menthlth,
          hlthpln1,
          medcost,
+         mjpast30,
          mj30day
          ) %>%
   subset(X_age_g < 6) # Removing individuals over 65 due to Medicare eligibility 
@@ -123,7 +124,19 @@ df$alcday5[df$alcday5 == 777 | df$alcday5 == 999] <- NA
 # Assigning the value of 77 and 99 to NA within the cannabis variable
 df$mj30day[df$mj30day == 7 | df$mj30day == 9] <- NA
 
+# Assigning the value of 77 and 99 to NA within the cannabis variable
+df$mjpast30[df$mjpast30 == 77 | df$mjpast30 == 99] <- NA
+
 # summary(df)
+
+barplot(table(df$menthlth))
+barplot(table(df$mjpast30))
+
+testdf <- subset(df, mjpast30 != 88)
+barplot(table(testdf$mjpast30))
+
+testdf <- subset(df, menthlth != 88)
+barplot(table(testdf$menthlth))
 
 ```
 
@@ -296,7 +309,7 @@ label(df$edu) <- "Education"
 label(df$X_incomg) <- "Income"
 
 # Creating health insurance label
-label(df$hlthpln1) <- "Uninsured"
+label(df$hlthpln1) <- "No health coverage"
 
 # Creating health cost label
 label(df$medcost) <- "Delay medical care due to cost in past year"
@@ -348,15 +361,20 @@ unad.strat <- with(df,
 epi.2by2(unad.strat, method = "cross.sectional")
 
 # Stratifying by sex
+sex.strat.over <- with(df, 
+                       table(ment14d, mj30day, sex))
 sex.strat.m <- with(subset(df, sex == "Male"),
                     table(ment14d, mj30day))
 sex.strat.f <- with(subset(df, sex == "Female"),
                     table(ment14d, mj30day))
 
+epi.2by2(sex.strat.over, method = "cross.sectional")
 epi.2by2(sex.strat.m, method = "cross.sectional")
 epi.2by2(sex.strat.f, method = "cross.sectional")
 
 # Stratifying by age
+age.strat.over <- with(df,
+                       table(ment14d, mj30day, age))
 age.strat.18 <- with(subset(df, X_age_g == "18-24"),
                      table(ment14d, mj30day))
 age.strat.25 <- with(subset(df, X_age_g == "25-34"),
@@ -368,6 +386,7 @@ age.strat.45 <- with(subset(df, X_age_g == "45-54"),
 age.strat.55 <- with(subset(df, X_age_g == "55-64"),
                      table(ment14d, mj30day))
 
+epi.2by2(age.strat.over, method = "cross.sectional")
 epi.2by2(age.strat.18, method = "cross.sectional")
 epi.2by2(age.strat.25, method = "cross.sectional")
 epi.2by2(age.strat.35, method = "cross.sectional")
@@ -375,6 +394,8 @@ epi.2by2(age.strat.45, method = "cross.sectional")
 epi.2by2(age.strat.55, method = "cross.sectional")
 
 # Stratifying by race/eth.
+race.strat.over <- with(df,
+                        table(ment14d, mj30day, race))
 race.strat.Asian <- with(subset(df, race == "Non-Hispanic Asian"),
                      table(ment14d, mj30day))
 race.strat.B <- with(subset(df, race == "Non-Hispanic Black or African American"),
@@ -392,6 +413,7 @@ race.strat.PI <- with(subset(df, race == "Non-Hispanic Pacific Islander"),
 race.strat.Wte <- with(subset(df, race == "Non-Hispanic White"),
                      table(ment14d, mj30day))
 
+epi.2by2(race.strat.over, method = "cross.sectional")
 epi.2by2(race.strat.Asian, method = "cross.sectional")
 epi.2by2(race.strat.B, method = "cross.sectional")
 epi.2by2(race.strat.Hisp, method = "cross.sectional")
@@ -402,22 +424,28 @@ epi.2by2(race.strat.PI, method = "cross.sectional")
 epi.2by2(race.strat.Wte, method = "cross.sectional")
 
 # Stratifying by medcost
+medcost.strat.over <- with(df,
+                           table(ment14d, mj30day, medcost))
 medcost.strat.y <- with(subset(df, medcost = "Yes"),
                         table(ment14d, mj30day))
 medcost.strat.n <- with(subset(df, medcost = "No"),
                         table(ment14d, mj30day))
 
+epi.2by2(medcost.strat.over, method = "cross.sectional")
 epi.2by2(medcost.strat.y, method = "cross.sectional")
 epi.2by2(medcost.strat.n, method = "cross.sectional")
 
 # Stratifying by insurance
-insurance.strat.y <- with(subset(df, hlthpln1 = "Yes"),
+hc.strat.over <- with(df,
+                      table(ment14d, mj30day, hlthpln1))
+hc.strat.y <- with(subset(df, hlthpln1 = "Yes"),
                         table(ment14d, mj30day))
-insurance.strat.n <- with(subset(df, hlthpln1 = "No"),
+hc.strat.n <- with(subset(df, hlthpln1 = "No"),
                         table(ment14d, mj30day))
 
-epi.2by2(insurance.strat.y, method = "cross.sectional")
-epi.2by2(insurance.strat.n, method = "cross.sectional")
+epi.2by2(hc.strat.over, method = "cross.sectional")
+epi.2by2(hc.strat.y, method = "cross.sectional")
+epi.2by2(hc.strat.n, method = "cross.sectional")
 
 ```
 
