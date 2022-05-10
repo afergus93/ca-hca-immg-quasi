@@ -156,6 +156,16 @@ df$ment14d[df$menthlth == 88] <- 3 # No poor mental health days in the past 30 d
 df$ment14d[df$menthlth >= 1 & df$menthlth <= 13] <- 2 # Between 1 and 13 days of poor mental health in past 30 days
 df$ment14d[df$menthlth > 13 & df$menthlth <= 30] <- 1 # Between 13 and 30 days of poor mental health in past 30 days
 
+# Creating variable for 14+ vs. none comparison
+df$ment14vsNo[df$ment14d == 1] <- 1
+df$ment14vsNo[df$ment14d == 3] <- 2
+df$ment14vsNo[is.na(df$ment14d) | df$ment14d == 2] <- NA
+
+# Creating variable for 14+ vs. 1-13 comparison
+df$ment14vs1[df$ment14d == 1] <- 1
+df$ment14vs1[df$ment14d == 2] <- 2
+df$ment14vs1[is.na(df$ment14d) | df$ment14d == 3] <- NA
+
 # Recoding tobacco usage variable
 df$curSmk[df$X_smoker3 == 1 | df$X_smoker3 == 2] <- 1 # Values 1 and 2 correspond to current smoker
 df$curSmk[df$X_smoker3 == 3 | df$X_smoker3 == 4] <- 2 # Either a former smoker or never smoked
@@ -267,7 +277,19 @@ df$curAlcSmk <- factor(df$curAlcSmk,
 # Mental Health Factors
 df$ment14d <- factor(df$ment14d,
                       levels = c(1,2,3),
-                      labels = c("14+ days", "1-14 days", "No days"),
+                      labels = c("14+ days", "1-13 days", "No days"),
+                      exclude = NULL)
+
+# Mental Health Factors
+df$ment14vsNo <- factor(df$ment14vsNo,
+                      levels = c(1,2),
+                      labels = c("14+ days", "No days"),
+                      exclude = NULL)
+
+# Mental Health Factors
+df$ment14vs1 <- factor(df$ment14vs1,
+                      levels = c(1,2),
+                      labels = c("14+ days", "1-13 days"),
                       exclude = NULL)
 
 # Health Insurance Factor
@@ -316,6 +338,8 @@ label(df$medcost) <- "Delay medical care due to cost in past year"
 
 # Creating mental health label
 label(df$ment14d) <- "Poor mental health in past month"
+label(df$ment14vsNo) <- "Poor mental health in past month"
+label(df$ment14vs1) <- "Poor mental health in past month"
 
 # Creating alcohol consumption label
 label(df$curAlc) <- "Alcohol consumption"
@@ -371,184 +395,366 @@ t1.alt.ment14d <- tbl_svysummary(db, by = ment14d,
 ```
 
 ```{r}
-#### Stratifying by sex ####
-sex.strat.over <- with(df, 
-                       table(ment14d, mj30day, sex))
-sex.strat.m <- with(subset(df, sex == "Male"),
-                    table(ment14d, mj30day))
-sex.strat.f <- with(subset(df, sex == "Female"),
-                    table(ment14d, mj30day))
+#### Stratifying by sex (14+ vs. none) ####
+sex.strat.over.none <- with(df, 
+                       table(ment14vsNo, mj30day, sex))
 
-b <- epi.2by2(sex.strat.over, method = "cross.sectional")
-c <- epi.2by2(sex.strat.m, method = "cross.sectional")
-d <- epi.2by2(sex.strat.f, method = "cross.sectional")
+sex.strat.m.none <- with(subset(df, sex == "Male"),
+                    table(ment14vsNo, mj30day))
+sex.strat.f.none <- with(subset(df, sex == "Female"),
+                    table(ment14vsNo, mj30day))
 
-```
-
-```{r}
-### Stratifying by age ####
-age.strat.over <- with(df,
-                       table(ment14d, mj30day, X_age_g))
-age.strat.18 <- with(subset(df, X_age_g == "18-24"),
-                     table(ment14d, mj30day))
-age.strat.25 <- with(subset(df, X_age_g == "25-34"),
-                     table(ment14d, mj30day))
-age.strat.35 <- with(subset(df, X_age_g == "35-44"),
-                     table(ment14d, mj30day))
-age.strat.45 <- with(subset(df, X_age_g == "45-54"),
-                     table(ment14d, mj30day))
-age.strat.55 <- with(subset(df, X_age_g == "55-64"),
-                     table(ment14d, mj30day))
-
-epi.2by2(age.strat.over, method = "cross.sectional")
-epi.2by2(age.strat.18, method = "cross.sectional")
-epi.2by2(age.strat.25, method = "cross.sectional")
-epi.2by2(age.strat.35, method = "cross.sectional")
-epi.2by2(age.strat.45, method = "cross.sectional")
-epi.2by2(age.strat.55, method = "cross.sectional")
+epi.2by2(sex.strat.over.none, method = "cross.sectional")
+epi.2by2(sex.strat.m.none, method = "cross.sectional")
+epi.2by2(sex.strat.f.none, method = "cross.sectional")
 
 ```
 
 ```{r}
-#### Stratifying by edu. ####
-edu.strat.overall <- with(df,
-                          table(ment14d, mj30day, edu))
-edu.strat.nhs <- with(subset(df, edu == "Did not graduate high school"),
-                      table(ment14d, mj30day))
-edu.strat.hs <- with(subset(df, edu == "High school graduate"),
-                      table(ment14d, mj30day))
-edu.strat.sc <- with(subset(df, edu == "Some college or tech school"),
-                      table(ment14d, mj30day))
-edu.strat.cg <- with(subset(df, edu == "Graduated college or tech school"),
-                      table(ment14d, mj30day))
+#### Stratifying by sex (14+ vs. 1-13) ####
+sex.strat.over.13 <- with(df, 
+                       table(ment14vs1, mj30day, sex))
 
-epi.2by2(edu.strat.overall, method = "cross.sectional")
-epi.2by2(edu.strat.nhs, method = "cross.sectional")
-epi.2by2(edu.strat.hs, method = "cross.sectional")
-epi.2by2(edu.strat.sc, method = "cross.sectional")
-epi.2by2(edu.strat.cg, method = "cross.sectional")
+sex.strat.m.13 <- with(subset(df, sex == "Male"),
+                    table(ment14vs1, mj30day))
+sex.strat.f.13 <- with(subset(df, sex == "Female"),
+                    table(ment14vs1, mj30day))
+
+epi.2by2(sex.strat.over.13, method = "cross.sectional")
+epi.2by2(sex.strat.m.13, method = "cross.sectional")
+epi.2by2(sex.strat.f.13, method = "cross.sectional")
 
 ```
 
 ```{r}
-### Stratifying by income ####
-inc.strat.over <- with(df,
-                       table(ment14d, mj30day, X_incomg))
-inc.strat.sub15 <- with(subset(df, X_incomg == "< $15,000"),
-                     table(ment14d, mj30day))
-inc.strat.15 <- with(subset(df, X_incomg == "$15,000-$24,999"),
-                     table(ment14d, mj30day))
-inc.strat.25 <- with(subset(df, X_incomg == "$25,000-$34,999"),
-                     table(ment14d, mj30day))
-inc.strat.35 <- with(subset(df, X_incomg == "$35,000-$49,999"),
-                     table(ment14d, mj30day))
-inc.strat.50 <- with(subset(df, X_incomg == "> $50,000"),
-                     table(ment14d, mj30day))
+### Stratifying by age (14+ vs. none) ####
+age.strat.over.none <- with(df,
+                       table(ment14vsNo, mj30day, X_age_g))
+age.strat.18.none <- with(subset(df, X_age_g == "18-24"),
+                     table(ment14vsNo, mj30day))
+age.strat.25.none <- with(subset(df, X_age_g == "25-34"),
+                     table(ment14vsNo, mj30day))
+age.strat.35.none <- with(subset(df, X_age_g == "35-44"),
+                     table(ment14vsNo, mj30day))
+age.strat.45.none <- with(subset(df, X_age_g == "45-54"),
+                     table(ment14vsNo, mj30day))
+age.strat.55.none <- with(subset(df, X_age_g == "55-64"),
+                     table(ment14vsNo, mj30day))
 
-epi.2by2(inc.strat.over, method = "cross.sectional")
-epi.2by2(inc.strat.sub15, method = "cross.sectional")
-epi.2by2(inc.strat.15, method = "cross.sectional")
-epi.2by2(inc.strat.25, method = "cross.sectional")
-epi.2by2(inc.strat.35, method = "cross.sectional")
-epi.2by2(inc.strat.50, method = "cross.sectional")
-
-```
-
-```{r}
-#### Stratifying by race/eth. ####
-race.strat.over <- with(df,
-                        table(ment14d, mj30day, race))
-race.strat.Asian <- with(subset(df, race == "Non-Hispanic Asian"),
-                     table(ment14d, mj30day))
-race.strat.B <- with(subset(df, race == "Non-Hispanic Black or African American"),
-                     table(ment14d, mj30day))
-race.strat.Hisp <- with(subset(df, race == "Hispanic, Latino/a, or Spanish origin"),
-                     table(ment14d, mj30day))
-race.strat.Mult <- with(subset(df, race == "Non-Hispanic two or more races"),
-                     table(ment14d, mj30day))
-race.strat.NatA <- with(subset(df, race == "Non-Hispanic Native American"),
-                     table(ment14d, mj30day))
-race.strat.othr <- with(subset(df, race == "Non-Hispanic Other race"),
-                     table(ment14d, mj30day))
-race.strat.PI <- with(subset(df, race == "Non-Hispanic Pacific Islander"),
-                     table(ment14d, mj30day))
-race.strat.Wte <- with(subset(df, race == "Non-Hispanic White"),
-                     table(ment14d, mj30day))
-
-epi.2by2(race.strat.over, method = "cross.sectional")
-epi.2by2(race.strat.Asian, method = "cross.sectional")
-epi.2by2(race.strat.B, method = "cross.sectional")
-epi.2by2(race.strat.Hisp, method = "cross.sectional")
-epi.2by2(race.strat.Mult, method = "cross.sectional")
-epi.2by2(race.strat.NatA, method = "cross.sectional")
-epi.2by2(race.strat.othr, method = "cross.sectional")
-epi.2by2(race.strat.PI, method = "cross.sectional")
-epi.2by2(race.strat.Wte, method = "cross.sectional")
+epi.2by2(age.strat.over.none, method = "cross.sectional")
+epi.2by2(age.strat.18.none, method = "cross.sectional")
+epi.2by2(age.strat.25.none, method = "cross.sectional")
+epi.2by2(age.strat.35.none, method = "cross.sectional")
+epi.2by2(age.strat.45.none, method = "cross.sectional")
+epi.2by2(age.strat.55.none, method = "cross.sectional")
 
 ```
 
 ```{r}
-#### Stratifying by medcost ####
-medcost.strat.over <- with(df,
-                           table(ment14d, mj30day, medcost))
-medcost.strat.y <- with(subset(df, medcost == "Yes"),
-                        table(ment14d, mj30day))
-medcost.strat.n <- with(subset(df, medcost == "No"),
-                        table(ment14d, mj30day))
+### Stratifying by age (14+ vs. 1-13) ####
+age.strat.over.13 <- with(df,
+                       table(ment14vs1, mj30day, X_age_g))
+age.strat.18.13 <- with(subset(df, X_age_g == "18-24"),
+                     table(ment14vs1, mj30day))
+age.strat.25.13 <- with(subset(df, X_age_g == "25-34"),
+                     table(ment14vs1, mj30day))
+age.strat.35.13 <- with(subset(df, X_age_g == "35-44"),
+                     table(ment14vs1, mj30day))
+age.strat.45.13 <- with(subset(df, X_age_g == "45-54"),
+                     table(ment14vs1, mj30day))
+age.strat.55.13 <- with(subset(df, X_age_g == "55-64"),
+                     table(ment14vs1, mj30day))
 
-# STRATA COMPARISON NEEDS TO CHANGE 
-# 14+ compared to no
-# 14+ compared to 1-13
-
-
-epi.2by2(medcost.strat.over, method = "cross.sectional")
-epi.2by2(medcost.strat.y, method = "cross.sectional")
-epi.2by2(medcost.strat.n, method = "cross.sectional")
-
-# Stratifying by insurance
-hc.strat.over <- with(df,
-                      table(ment14d, mj30day, hlthpln1))
-hc.strat.y <- with(subset(df, hlthpln1 == "Yes"),
-                        table(ment14d, mj30day))
-hc.strat.n <- with(subset(df, hlthpln1 == "No"),
-                        table(ment14d, mj30day))
-
-epi.2by2(hc.strat.over, method = "cross.sectional")
-epi.2by2(hc.strat.y, method = "cross.sectional")
-epi.2by2(hc.strat.n, method = "cross.sectional")
+epi.2by2(age.strat.over.13, method = "cross.sectional")
+epi.2by2(age.strat.18.13, method = "cross.sectional")
+epi.2by2(age.strat.25.13, method = "cross.sectional")
+epi.2by2(age.strat.35.13, method = "cross.sectional")
+epi.2by2(age.strat.45.13, method = "cross.sectional")
+epi.2by2(age.strat.55.13, method = "cross.sectional")
 
 ```
 
 ```{r}
-#### Stratifying by tob. smk ####
-smk.strat.over <- with(df,
-                      table(ment14d, mj30day, curSmk))
-smk.strat.y <- with(subset(df, curSmk == "Current smoker"),
-                        table(ment14d, mj30day))
-smk.strat.n <- with(subset(df, curSmk == "Non-smoker"),
-                        table(ment14d, mj30day))
+#### Stratifying by edu. (14+ vs. none) ####
+edu.strat.overall.none <- with(df,
+                          table(ment14vsNo, mj30day, edu))
+edu.strat.nhs.none <- with(subset(df, edu == "Did not graduate high school"),
+                      table(ment14vsNo, mj30day))
+edu.strat.hs.none <- with(subset(df, edu == "High school graduate"),
+                      table(ment14vsNo, mj30day))
+edu.strat.sc.none <- with(subset(df, edu == "Some college or tech school"),
+                      table(ment14vsNo, mj30day))
+edu.strat.cg.none <- with(subset(df, edu == "Graduated college or tech school"),
+                      table(ment14vsNo, mj30day))
 
-epi.2by2(smk.strat.over, method = "cross.sectional")
-epi.2by2(smk.strat.y, method = "cross.sectional")
-epi.2by2(smk.strat.n, method = "cross.sectional")
-
-# Stratifying by alc. consumption 
-alc.strat.over <- with(df,
-                      table(ment14d, mj30day, curAlc))
-alc.strat.pw <- with(subset(df, curAlc == "Within past week"),
-                        table(ment14d, mj30day))
-alc.strat.pm <- with(subset(df, curAlc == "Within past month"),
-                        table(ment14d, mj30day))
-alc.strat.none <- with(subset(df, curAlc == "None in past month"),
-                        table(ment14d, mj30day))
-
-epi.2by2(alc.strat.over, method = "cross.sectional")
-epi.2by2(alc.strat.pw, method = "cross.sectional")
-epi.2by2(alc.strat.pm, method = "cross.sectional")
-epi.2by2(alc.strat.none, method = "cross.sectional")
+epi.2by2(edu.strat.overall.none, method = "cross.sectional")
+epi.2by2(edu.strat.nhs.none, method = "cross.sectional")
+epi.2by2(edu.strat.hs.none, method = "cross.sectional")
+epi.2by2(edu.strat.sc.none, method = "cross.sectional")
+epi.2by2(edu.strat.cg.none, method = "cross.sectional")
 
 ```
 
+```{r}
+#### Stratifying by edu. (14+ vs. 1-13) ####
+edu.strat.overall.13 <- with(df,
+                          table(ment14vs1, mj30day, edu))
+edu.strat.nhs.13 <- with(subset(df, edu == "Did not graduate high school"),
+                      table(ment14vs1, mj30day))
+edu.strat.hs.13 <- with(subset(df, edu == "High school graduate"),
+                      table(ment14vs1, mj30day))
+edu.strat.sc.13 <- with(subset(df, edu == "Some college or tech school"),
+                      table(ment14vs1, mj30day))
+edu.strat.cg.13 <- with(subset(df, edu == "Graduated college or tech school"),
+                      table(ment14vs1, mj30day))
+
+epi.2by2(edu.strat.overall.13, method = "cross.sectional")
+epi.2by2(edu.strat.nhs.13, method = "cross.sectional")
+epi.2by2(edu.strat.hs.13, method = "cross.sectional")
+epi.2by2(edu.strat.sc.13, method = "cross.sectional")
+epi.2by2(edu.strat.cg.13, method = "cross.sectional")
+
+```
+
+```{r}
+### Stratifying by income (14+ vs. none) ####
+inc.strat.over.none <- with(df,
+                       table(ment14vsNo, mj30day, X_incomg))
+inc.strat.sub15.none <- with(subset(df, X_incomg == "< $15,000"),
+                     table(ment14vsNo, mj30day))
+inc.strat.15.none <- with(subset(df, X_incomg == "$15,000-$24,999"),
+                     table(ment14vsNo, mj30day))
+inc.strat.25.none <- with(subset(df, X_incomg == "$25,000-$34,999"),
+                     table(ment14vsNo, mj30day))
+inc.strat.35.none <- with(subset(df, X_incomg == "$35,000-$49,999"),
+                     table(ment14vsNo, mj30day))
+inc.strat.50.none <- with(subset(df, X_incomg == "> $50,000"),
+                     table(ment14vsNo, mj30day))
+
+epi.2by2(inc.strat.over.none, method = "cross.sectional")
+epi.2by2(inc.strat.sub15.none, method = "cross.sectional")
+epi.2by2(inc.strat.15.none, method = "cross.sectional")
+epi.2by2(inc.strat.25.none, method = "cross.sectional")
+epi.2by2(inc.strat.35.none, method = "cross.sectional")
+epi.2by2(inc.strat.50.none, method = "cross.sectional")
+
+```
+
+```{r}
+### Stratifying by income (14+ vs. 1-13) ####
+inc.strat.over.13 <- with(df,
+                       table(ment14vs1, mj30day, X_incomg))
+inc.strat.sub15.13 <- with(subset(df, X_incomg == "< $15,000"),
+                     table(ment14vs1, mj30day))
+inc.strat.15.13 <- with(subset(df, X_incomg == "$15,000-$24,999"),
+                     table(ment14vs1, mj30day))
+inc.strat.25.13 <- with(subset(df, X_incomg == "$25,000-$34,999"),
+                     table(ment14vs1, mj30day))
+inc.strat.35.13 <- with(subset(df, X_incomg == "$35,000-$49,999"),
+                     table(ment14vs1, mj30day))
+inc.strat.50.13 <- with(subset(df, X_incomg == "> $50,000"),
+                     table(ment14vs1, mj30day))
+
+epi.2by2(inc.strat.over.13, method = "cross.sectional")
+epi.2by2(inc.strat.sub15.13, method = "cross.sectional")
+epi.2by2(inc.strat.15.13, method = "cross.sectional")
+epi.2by2(inc.strat.25.13, method = "cross.sectional")
+epi.2by2(inc.strat.35.13, method = "cross.sectional")
+epi.2by2(inc.strat.50.13, method = "cross.sectional")
+
+```
+
+```{r}
+#### Stratifying by race/eth. (14+ vs. none) ####
+race.strat.over.none <- with(df,
+                        table(ment14vsNo, mj30day, race))
+race.strat.Asian.none <- with(subset(df, race == "Non-Hispanic Asian"),
+                     table(ment14vsNo, mj30day))
+race.strat.B.none <- with(subset(df, race == "Non-Hispanic Black or African American"),
+                     table(ment14vsNo, mj30day))
+race.strat.Hisp.none <- with(subset(df, race == "Hispanic, Latino/a, or Spanish origin"),
+                     table(ment14vsNo, mj30day))
+race.strat.Mult.none <- with(subset(df, race == "Non-Hispanic two or more races"),
+                     table(ment14vsNo, mj30day))
+race.strat.NatA.none <- with(subset(df, race == "Non-Hispanic Native American"),
+                     table(ment14vsNo, mj30day))
+race.strat.othr.none <- with(subset(df, race == "Non-Hispanic Other race"),
+                     table(ment14vsNo, mj30day))
+race.strat.PI.none <- with(subset(df, race == "Non-Hispanic Pacific Islander"),
+                     table(ment14vsNo, mj30day))
+race.strat.Wte.none <- with(subset(df, race == "Non-Hispanic White"),
+                     table(ment14vsNo, mj30day))
+
+epi.2by2(race.strat.over.none, method = "cross.sectional")
+epi.2by2(race.strat.Asian.none, method = "cross.sectional")
+epi.2by2(race.strat.B.none, method = "cross.sectional")
+epi.2by2(race.strat.Hisp.none, method = "cross.sectional")
+epi.2by2(race.strat.Mult.none, method = "cross.sectional")
+epi.2by2(race.strat.NatA.none, method = "cross.sectional")
+epi.2by2(race.strat.othr.none, method = "cross.sectional")
+epi.2by2(race.strat.PI.none, method = "cross.sectional")
+epi.2by2(race.strat.Wte.none, method = "cross.sectional")
+
+```
+
+```{r}
+#### Stratifying by race/eth. (14+ vs. 1-13) ####
+race.strat.over.13 <- with(df,
+                        table(ment14vs1, mj30day, race))
+race.strat.Asian.13 <- with(subset(df, race == "Non-Hispanic Asian"),
+                     table(ment14vs1, mj30day))
+race.strat.B.13 <- with(subset(df, race == "Non-Hispanic Black or African American"),
+                     table(ment14vs1, mj30day))
+race.strat.Hisp.13 <- with(subset(df, race == "Hispanic, Latino/a, or Spanish origin"),
+                     table(ment14vs1, mj30day))
+race.strat.Mult.13 <- with(subset(df, race == "Non-Hispanic two or more races"),
+                     table(ment14vs1, mj30day))
+race.strat.NatA.13 <- with(subset(df, race == "Non-Hispanic Native American"),
+                     table(ment14vs1, mj30day))
+race.strat.othr.13 <- with(subset(df, race == "Non-Hispanic Other race"),
+                     table(ment14vs1, mj30day))
+race.strat.PI.13<- with(subset(df, race == "Non-Hispanic Pacific Islander"),
+                     table(ment14vs1, mj30day))
+race.strat.Wte.13 <- with(subset(df, race == "Non-Hispanic White"),
+                     table(ment14vs1, mj30day))
+
+epi.2by2(race.strat.over.13, method = "cross.sectional")
+epi.2by2(race.strat.Asian.13, method = "cross.sectional")
+epi.2by2(race.strat.B.13, method = "cross.sectional")
+epi.2by2(race.strat.Hisp.13, method = "cross.sectional")
+epi.2by2(race.strat.Mult.13, method = "cross.sectional")
+epi.2by2(race.strat.NatA.13, method = "cross.sectional")
+epi.2by2(race.strat.othr.13, method = "cross.sectional")
+epi.2by2(race.strat.PI.13, method = "cross.sectional")
+epi.2by2(race.strat.Wte.13, method = "cross.sectional")
+
+```
+
+```{r}
+#### Stratifying by medcost (14+ vs. none) ####
+medcost.strat.over.none <- with(df,
+                           table(ment14vsNo, mj30day, medcost))
+medcost.strat.y.none <- with(subset(df, medcost == "Yes"),
+                        table(ment14vsNo, mj30day))
+medcost.strat.n.none <- with(subset(df, medcost == "No"),
+                        table(ment14vsNo, mj30day))
+
+epi.2by2(medcost.strat.over.none, method = "cross.sectional")
+epi.2by2(medcost.strat.y.none, method = "cross.sectional")
+epi.2by2(medcost.strat.n.none, method = "cross.sectional")
+
+```
+
+```{r}
+#### Stratifying by medcost (14+ vs. 1-13) ####
+medcost.strat.over.13 <- with(df,
+                           table(ment14vs1, mj30day, medcost))
+medcost.strat.y.13 <- with(subset(df, medcost == "Yes"),
+                        table(ment14vs1, mj30day))
+medcost.strat.n.13 <- with(subset(df, medcost == "No"),
+                        table(ment14vs1, mj30day))
+
+epi.2by2(medcost.strat.over.13, method = "cross.sectional")
+epi.2by2(medcost.strat.y.13, method = "cross.sectional")
+epi.2by2(medcost.strat.n.13, method = "cross.sectional")
+
+```
+
+```{r}
+#### Stratifying by insurance (14+ vs. none) ####
+hc.strat.over.none <- with(df,
+                      table(ment14vsNo, mj30day, hlthpln1))
+hc.strat.y.none <- with(subset(df, hlthpln1 == "Yes"),
+                        table(ment14vsNo, mj30day))
+hc.strat.n.none <- with(subset(df, hlthpln1 == "No"),
+                        table(ment14vsNo, mj30day))
+
+epi.2by2(hc.strat.over.none, method = "cross.sectional")
+epi.2by2(hc.strat.y.none, method = "cross.sectional")
+epi.2by2(hc.strat.n.none, method = "cross.sectional")
+
+```
+
+```{r}
+#### Stratifying by insurance (14+ vs. 1-13) ####
+hc.strat.over.13 <- with(df,
+                      table(ment14vs1, mj30day, hlthpln1))
+hc.strat.y.13 <- with(subset(df, hlthpln1 == "Yes"),
+                        table(ment14vs1, mj30day))
+hc.strat.n.13 <- with(subset(df, hlthpln1 == "No"),
+                        table(ment14vs1, mj30day))
+
+epi.2by2(hc.strat.over.13, method = "cross.sectional")
+epi.2by2(hc.strat.y.13, method = "cross.sectional")
+epi.2by2(hc.strat.n.13, method = "cross.sectional")
+
+```
+
+```{r}
+#### Stratifying by tob. smk (14+ vs. none) ####
+smk.strat.over.none <- with(df,
+                      table(ment14vsNo, mj30day, curSmk))
+smk.strat.y.none <- with(subset(df, curSmk == "Current smoker"),
+                        table(ment14vsNo, mj30day))
+smk.strat.n.none <- with(subset(df, curSmk == "Non-smoker"),
+                        table(ment14vsNo, mj30day))
+
+epi.2by2(smk.strat.over.none, method = "cross.sectional")
+epi.2by2(smk.strat.y.none, method = "cross.sectional")
+epi.2by2(smk.strat.n.none, method = "cross.sectional")
+
+```
+
+```{r}
+#### Stratifying by tob. smk (14+ vs. 1-13) ####
+smk.strat.over.13 <- with(df,
+                      table(ment14vs1, mj30day, curSmk))
+smk.strat.y.13 <- with(subset(df, curSmk == "Current smoker"),
+                        table(ment14vs1, mj30day))
+smk.strat.n.13 <- with(subset(df, curSmk == "Non-smoker"),
+                        table(ment14vs1, mj30day))
+
+epi.2by2(smk.strat.over.13, method = "cross.sectional")
+epi.2by2(smk.strat.y.13, method = "cross.sectional")
+epi.2by2(smk.strat.n.13, method = "cross.sectional")
+
+```
+
+```{r}
+#### Stratifying by alc. consumption (14+ vs. none) ####
+alc.strat.over.none <- with(df,
+                      table(ment14vsNo, mj30day, curAlc))
+alc.strat.pw.none <- with(subset(df, curAlc == "Within past week"),
+                        table(ment14vsNo, mj30day))
+alc.strat.pm.none <- with(subset(df, curAlc == "Within past month"),
+                        table(ment14vsNo, mj30day))
+alc.strat.none.none <- with(subset(df, curAlc == "None in past month"),
+                        table(ment14vsNo, mj30day))
+
+epi.2by2(alc.strat.over.none, method = "cross.sectional")
+epi.2by2(alc.strat.pw.none, method = "cross.sectional")
+epi.2by2(alc.strat.pm.none, method = "cross.sectional")
+epi.2by2(alc.strat.none.none, method = "cross.sectional")
+
+```
+
+```{r}
+#### Stratifying by alc. consumption (14+ vs. 1-13) ####
+alc.strat.over.13 <- with(df,
+                      table(ment14vs1, mj30day, curAlc))
+alc.strat.pw.13 <- with(subset(df, curAlc == "Within past week"),
+                        table(ment14vs1, mj30day))
+alc.strat.pm.13 <- with(subset(df, curAlc == "Within past month"),
+                        table(ment14vs1, mj30day))
+alc.strat.none.13 <- with(subset(df, curAlc == "None in past month"),
+                        table(ment14vs1, mj30day))
+
+epi.2by2(alc.strat.over.13, method = "cross.sectional")
+epi.2by2(alc.strat.pw.13, method = "cross.sectional")
+epi.2by2(alc.strat.pm.13, method = "cross.sectional")
+epi.2by2(alc.strat.none.13, method = "cross.sectional")
+
+```
 
 
 
