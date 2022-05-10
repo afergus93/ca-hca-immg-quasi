@@ -20,7 +20,6 @@ library(foreign)
 library(haven)
 library(table1)
 library(kableExtra)
-library(weights)
 library(gtsummary)
 library(gt)
 
@@ -129,12 +128,12 @@ df$mjpast30[df$mjpast30 == 77 | df$mjpast30 == 99] <- NA
 
 # summary(df)
 
-# barplot(table(df$menthlth))
-# barplot(table(df$mjpast30))
-# 
-# testdf <- subset(df, mjpast30 != 88)
-# barplot(table(testdf$mjpast30))
-# 
+#  barplot(table(df$menthlth))
+#  barplot(table(df$mjpast30))
+#  
+#  testdf <- subset(df, mjpast30 != 88)
+#  barplot(table(testdf$mjpast30))
+#  
 # testdf <- subset(df, menthlth != 88)
 # barplot(table(testdf$menthlth))
 
@@ -153,7 +152,7 @@ df <- df %>%
 # summary(df)
 
 # Recoding mental health variable 
-df$ment14d[df$menthlth == 88] <- 2 # No poor mental health days in the past 30 days
+df$ment14d[df$menthlth == 88] <- 3 # No poor mental health days in the past 30 days
 df$ment14d[df$menthlth >= 1 & df$menthlth <= 13] <- 2 # Between 1 and 13 days of poor mental health in past 30 days
 df$ment14d[df$menthlth > 13 & df$menthlth <= 30] <- 1 # Between 13 and 30 days of poor mental health in past 30 days
 
@@ -267,8 +266,8 @@ df$curAlcSmk <- factor(df$curAlcSmk,
 
 # Mental Health Factors
 df$ment14d <- factor(df$ment14d,
-                      levels = c(1,2),
-                      labels = c("14+ days", "Less than 14 days"),
+                      levels = c(1,2,3),
+                      labels = c("14+ days", "1-14 days", "No days"),
                       exclude = NULL)
 
 # Health Insurance Factor
@@ -361,9 +360,9 @@ sex.strat.m <- with(subset(df, sex == "Male"),
 sex.strat.f <- with(subset(df, sex == "Female"),
                     table(ment14d, mj30day))
 
-epi.2by2(sex.strat.over, method = "cross.sectional")
-epi.2by2(sex.strat.m, method = "cross.sectional")
-epi.2by2(sex.strat.f, method = "cross.sectional")
+b <- epi.2by2(sex.strat.over, method = "cross.sectional")
+c <- epi.2by2(sex.strat.m, method = "cross.sectional")
+d <- epi.2by2(sex.strat.f, method = "cross.sectional")
 
 ```
 
@@ -477,6 +476,11 @@ medcost.strat.y <- with(subset(df, medcost == "Yes"),
                         table(ment14d, mj30day))
 medcost.strat.n <- with(subset(df, medcost == "No"),
                         table(ment14d, mj30day))
+
+# STRATA COMPARISON NEEDS TO CHANGE 
+# 14+ compared to no
+# 14+ compared to 1-13
+
 
 epi.2by2(medcost.strat.over, method = "cross.sectional")
 epi.2by2(medcost.strat.y, method = "cross.sectional")
