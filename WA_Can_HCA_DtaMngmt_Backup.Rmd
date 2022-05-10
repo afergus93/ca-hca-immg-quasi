@@ -337,6 +337,7 @@ db <- svydesign(
   data = df, 
   nest = TRUE) 
 
+# main table 1 by current vs non-current cannabis use 
 t1 <- tbl_svysummary(db, by = mj30day, 
                include = c(X_age_g, sex, race, edu, X_incomg, hlthpln1, medcost, ment14d, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
@@ -348,6 +349,24 @@ t1 <- tbl_svysummary(db, by = mj30day,
 t1 %>%
   as_gt() %>%
   gtsave("Table1_CA_WA.html")
+
+# alternative table 1's for demographic exploration
+t1.alt.medcost <- tbl_svysummary(db, by = medcost, 
+               include = c(X_age_g, sex, race, edu, X_incomg, hlthpln1, mj30day, ment14d, curAlc, curSmk),
+               statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
+  modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
+  add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
+  modify_caption("**Table 1Alt. dHCA Characteristics**") %>%
+  bold_labels()
+
+
+t1.alt.ment14d <- tbl_svysummary(db, by = ment14d, 
+               include = c(X_age_g, sex, race, edu, X_incomg, hlthpln1, mj30day, medcost, curAlc, curSmk),
+               statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
+  modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
+  add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
+  modify_caption("**Table 1Alt. dHCA Characteristics**") %>%
+  bold_labels()
 
 ```
 
