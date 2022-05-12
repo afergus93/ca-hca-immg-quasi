@@ -22,6 +22,7 @@ library(table1)
 library(kableExtra)
 library(gtsummary)
 library(gt)
+library(broom)
 
 ```
 
@@ -154,7 +155,7 @@ df <- df %>%
 # Recoding mental health variable 
 df$ment14d[df$menthlth == 88] <- 3 # No poor mental health days in the past 30 days
 df$ment14d[df$menthlth >= 1 & df$menthlth <= 13] <- 2 # Between 1 and 13 days of poor mental health in past 30 days
-df$ment14d[df$menthlth > 13 & df$menthlth <= 30] <- 1 # Between 13 and 30 days of poor mental health in past 30 days
+df$ment14d[df$menthlth > 13 & df$menthlth <= 30] <- 1 # Between 14 and 30 days of poor mental health in past 30 days
 
 # Creating variable for 14+ vs. none comparison
 df$ment14vsNo[df$ment14d == 1] <- 1
@@ -404,9 +405,9 @@ sex.strat.m.none <- with(subset(df, sex == "Male"),
 sex.strat.f.none <- with(subset(df, sex == "Female"),
                     table(ment14vsNo, mj30day))
 
-epi.2by2(sex.strat.over.none, method = "cross.sectional")
-epi.2by2(sex.strat.m.none, method = "cross.sectional")
-epi.2by2(sex.strat.f.none, method = "cross.sectional")
+sex.none <- tidy(epi.2by2(sex.strat.over.none, method = "cross.sectional"))
+sex.m.none <- tidy(epi.2by2(sex.strat.m.none, method = "cross.sectional"))
+sex.f.none <- tidy(epi.2by2(sex.strat.f.none, method = "cross.sectional"))
 
 ```
 
@@ -420,9 +421,9 @@ sex.strat.m.13 <- with(subset(df, sex == "Male"),
 sex.strat.f.13 <- with(subset(df, sex == "Female"),
                     table(ment14vs1, mj30day))
 
-epi.2by2(sex.strat.over.13, method = "cross.sectional")
-epi.2by2(sex.strat.m.13, method = "cross.sectional")
-epi.2by2(sex.strat.f.13, method = "cross.sectional")
+tidy(epi.2by2(sex.strat.over.13, method = "cross.sectional"))
+tidy(epi.2by2(sex.strat.m.13, method = "cross.sectional"))
+tidy(epi.2by2(sex.strat.f.13, method = "cross.sectional"))
 
 ```
 
@@ -441,12 +442,12 @@ age.strat.45.none <- with(subset(df, X_age_g == "45-54"),
 age.strat.55.none <- with(subset(df, X_age_g == "55-64"),
                      table(ment14vsNo, mj30day))
 
-epi.2by2(age.strat.over.none, method = "cross.sectional")
-epi.2by2(age.strat.18.none, method = "cross.sectional")
-epi.2by2(age.strat.25.none, method = "cross.sectional")
-epi.2by2(age.strat.35.none, method = "cross.sectional")
-epi.2by2(age.strat.45.none, method = "cross.sectional")
-epi.2by2(age.strat.55.none, method = "cross.sectional")
+tidy(epi.2by2(age.strat.over.none, method = "cross.sectional"))
+tidy(epi.2by2(age.strat.18.none, method = "cross.sectional"))
+tidy(epi.2by2(age.strat.25.none, method = "cross.sectional"))
+tidy(epi.2by2(age.strat.35.none, method = "cross.sectional"))
+tidy(epi.2by2(age.strat.45.none, method = "cross.sectional"))
+tidy(epi.2by2(age.strat.55.none, method = "cross.sectional"))
 
 ```
 
@@ -465,12 +466,12 @@ age.strat.45.13 <- with(subset(df, X_age_g == "45-54"),
 age.strat.55.13 <- with(subset(df, X_age_g == "55-64"),
                      table(ment14vs1, mj30day))
 
-epi.2by2(age.strat.over.13, method = "cross.sectional")
-epi.2by2(age.strat.18.13, method = "cross.sectional")
-epi.2by2(age.strat.25.13, method = "cross.sectional")
-epi.2by2(age.strat.35.13, method = "cross.sectional")
-epi.2by2(age.strat.45.13, method = "cross.sectional")
-epi.2by2(age.strat.55.13, method = "cross.sectional")
+tidy(epi.2by2(age.strat.over.13, method = "cross.sectional"))
+tidy(epi.2by2(age.strat.18.13, method = "cross.sectional"))
+tidy(epi.2by2(age.strat.25.13, method = "cross.sectional"))
+tidy(epi.2by2(age.strat.35.13, method = "cross.sectional"))
+tidy(epi.2by2(age.strat.45.13, method = "cross.sectional"))
+tidy(epi.2by2(age.strat.55.13, method = "cross.sectional"))
 
 ```
 
@@ -487,11 +488,11 @@ edu.strat.sc.none <- with(subset(df, edu == "Some college or tech school"),
 edu.strat.cg.none <- with(subset(df, edu == "Graduated college or tech school"),
                       table(ment14vsNo, mj30day))
 
-epi.2by2(edu.strat.overall.none, method = "cross.sectional")
-epi.2by2(edu.strat.nhs.none, method = "cross.sectional")
-epi.2by2(edu.strat.hs.none, method = "cross.sectional")
-epi.2by2(edu.strat.sc.none, method = "cross.sectional")
-epi.2by2(edu.strat.cg.none, method = "cross.sectional")
+tidy(epi.2by2(edu.strat.overall.none, method = "cross.sectional"))
+tidy(epi.2by2(edu.strat.nhs.none, method = "cross.sectional"))
+tidy(epi.2by2(edu.strat.hs.none, method = "cross.sectional"))
+tidy(epi.2by2(edu.strat.sc.none, method = "cross.sectional"))
+tidy(epi.2by2(edu.strat.cg.none, method = "cross.sectional"))
 
 ```
 
@@ -508,11 +509,11 @@ edu.strat.sc.13 <- with(subset(df, edu == "Some college or tech school"),
 edu.strat.cg.13 <- with(subset(df, edu == "Graduated college or tech school"),
                       table(ment14vs1, mj30day))
 
-epi.2by2(edu.strat.overall.13, method = "cross.sectional")
-epi.2by2(edu.strat.nhs.13, method = "cross.sectional")
-epi.2by2(edu.strat.hs.13, method = "cross.sectional")
-epi.2by2(edu.strat.sc.13, method = "cross.sectional")
-epi.2by2(edu.strat.cg.13, method = "cross.sectional")
+tidy(epi.2by2(edu.strat.overall.13, method = "cross.sectional"))
+tidy(epi.2by2(edu.strat.nhs.13, method = "cross.sectional"))
+tidy(epi.2by2(edu.strat.hs.13, method = "cross.sectional"))
+tidy(epi.2by2(edu.strat.sc.13, method = "cross.sectional"))
+tidy(epi.2by2(edu.strat.cg.13, method = "cross.sectional"))
 
 ```
 
@@ -531,12 +532,12 @@ inc.strat.35.none <- with(subset(df, X_incomg == "$35,000-$49,999"),
 inc.strat.50.none <- with(subset(df, X_incomg == "> $50,000"),
                      table(ment14vsNo, mj30day))
 
-epi.2by2(inc.strat.over.none, method = "cross.sectional")
-epi.2by2(inc.strat.sub15.none, method = "cross.sectional")
-epi.2by2(inc.strat.15.none, method = "cross.sectional")
-epi.2by2(inc.strat.25.none, method = "cross.sectional")
-epi.2by2(inc.strat.35.none, method = "cross.sectional")
-epi.2by2(inc.strat.50.none, method = "cross.sectional")
+tidy(epi.2by2(inc.strat.over.none, method = "cross.sectional"))
+tidy(epi.2by2(inc.strat.sub15.none, method = "cross.sectional"))
+tidy(epi.2by2(inc.strat.15.none, method = "cross.sectional"))
+tidy(epi.2by2(inc.strat.25.none, method = "cross.sectional"))
+tidy(epi.2by2(inc.strat.35.none, method = "cross.sectional"))
+tidy(epi.2by2(inc.strat.50.none, method = "cross.sectional"))
 
 ```
 
@@ -555,12 +556,12 @@ inc.strat.35.13 <- with(subset(df, X_incomg == "$35,000-$49,999"),
 inc.strat.50.13 <- with(subset(df, X_incomg == "> $50,000"),
                      table(ment14vs1, mj30day))
 
-epi.2by2(inc.strat.over.13, method = "cross.sectional")
-epi.2by2(inc.strat.sub15.13, method = "cross.sectional")
-epi.2by2(inc.strat.15.13, method = "cross.sectional")
-epi.2by2(inc.strat.25.13, method = "cross.sectional")
-epi.2by2(inc.strat.35.13, method = "cross.sectional")
-epi.2by2(inc.strat.50.13, method = "cross.sectional")
+tidy(epi.2by2(inc.strat.over.13, method = "cross.sectional"))
+tidy(epi.2by2(inc.strat.sub15.13, method = "cross.sectional"))
+tidy(epi.2by2(inc.strat.15.13, method = "cross.sectional"))
+tidy(epi.2by2(inc.strat.25.13, method = "cross.sectional"))
+tidy(epi.2by2(inc.strat.35.13, method = "cross.sectional"))
+tidy(epi.2by2(inc.strat.50.13, method = "cross.sectional"))
 
 ```
 
@@ -585,15 +586,15 @@ race.strat.PI.none <- with(subset(df, race == "Non-Hispanic Pacific Islander"),
 race.strat.Wte.none <- with(subset(df, race == "Non-Hispanic White"),
                      table(ment14vsNo, mj30day))
 
-epi.2by2(race.strat.over.none, method = "cross.sectional")
-epi.2by2(race.strat.Asian.none, method = "cross.sectional")
-epi.2by2(race.strat.B.none, method = "cross.sectional")
-epi.2by2(race.strat.Hisp.none, method = "cross.sectional")
-epi.2by2(race.strat.Mult.none, method = "cross.sectional")
-epi.2by2(race.strat.NatA.none, method = "cross.sectional")
-epi.2by2(race.strat.othr.none, method = "cross.sectional")
-epi.2by2(race.strat.PI.none, method = "cross.sectional")
-epi.2by2(race.strat.Wte.none, method = "cross.sectional")
+tidy(epi.2by2(race.strat.over.none, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.Asian.none, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.B.none, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.Hisp.none, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.Mult.none, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.NatA.none, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.othr.none, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.PI.none, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.Wte.none, method = "cross.sectional"))
 
 ```
 
@@ -618,15 +619,15 @@ race.strat.PI.13<- with(subset(df, race == "Non-Hispanic Pacific Islander"),
 race.strat.Wte.13 <- with(subset(df, race == "Non-Hispanic White"),
                      table(ment14vs1, mj30day))
 
-epi.2by2(race.strat.over.13, method = "cross.sectional")
-epi.2by2(race.strat.Asian.13, method = "cross.sectional")
-epi.2by2(race.strat.B.13, method = "cross.sectional")
-epi.2by2(race.strat.Hisp.13, method = "cross.sectional")
-epi.2by2(race.strat.Mult.13, method = "cross.sectional")
-epi.2by2(race.strat.NatA.13, method = "cross.sectional")
-epi.2by2(race.strat.othr.13, method = "cross.sectional")
-epi.2by2(race.strat.PI.13, method = "cross.sectional")
-epi.2by2(race.strat.Wte.13, method = "cross.sectional")
+tidy(epi.2by2(race.strat.over.13, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.Asian.13, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.B.13, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.Hisp.13, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.Mult.13, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.NatA.13, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.othr.13, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.PI.13, method = "cross.sectional"))
+tidy(epi.2by2(race.strat.Wte.13, method = "cross.sectional"))
 
 ```
 
@@ -639,9 +640,9 @@ medcost.strat.y.none <- with(subset(df, medcost == "Yes"),
 medcost.strat.n.none <- with(subset(df, medcost == "No"),
                         table(ment14vsNo, mj30day))
 
-epi.2by2(medcost.strat.over.none, method = "cross.sectional")
-epi.2by2(medcost.strat.y.none, method = "cross.sectional")
-epi.2by2(medcost.strat.n.none, method = "cross.sectional")
+tidy(epi.2by2(medcost.strat.over.none, method = "cross.sectional"))
+tidy(epi.2by2(medcost.strat.y.none, method = "cross.sectional"))
+tidy(epi.2by2(medcost.strat.n.none, method = "cross.sectional"))
 
 ```
 
@@ -654,9 +655,9 @@ medcost.strat.y.13 <- with(subset(df, medcost == "Yes"),
 medcost.strat.n.13 <- with(subset(df, medcost == "No"),
                         table(ment14vs1, mj30day))
 
-epi.2by2(medcost.strat.over.13, method = "cross.sectional")
-epi.2by2(medcost.strat.y.13, method = "cross.sectional")
-epi.2by2(medcost.strat.n.13, method = "cross.sectional")
+tidy(epi.2by2(medcost.strat.over.13, method = "cross.sectional"))
+tidy(epi.2by2(medcost.strat.y.13, method = "cross.sectional"))
+tidy(epi.2by2(medcost.strat.n.13, method = "cross.sectional"))
 
 ```
 
@@ -669,9 +670,9 @@ hc.strat.y.none <- with(subset(df, hlthpln1 == "Yes"),
 hc.strat.n.none <- with(subset(df, hlthpln1 == "No"),
                         table(ment14vsNo, mj30day))
 
-epi.2by2(hc.strat.over.none, method = "cross.sectional")
-epi.2by2(hc.strat.y.none, method = "cross.sectional")
-epi.2by2(hc.strat.n.none, method = "cross.sectional")
+tidy(epi.2by2(hc.strat.over.none, method = "cross.sectional"))
+tidy(epi.2by2(hc.strat.y.none, method = "cross.sectional"))
+tidy(epi.2by2(hc.strat.n.none, method = "cross.sectional"))
 
 ```
 
@@ -684,9 +685,9 @@ hc.strat.y.13 <- with(subset(df, hlthpln1 == "Yes"),
 hc.strat.n.13 <- with(subset(df, hlthpln1 == "No"),
                         table(ment14vs1, mj30day))
 
-epi.2by2(hc.strat.over.13, method = "cross.sectional")
-epi.2by2(hc.strat.y.13, method = "cross.sectional")
-epi.2by2(hc.strat.n.13, method = "cross.sectional")
+tidy(epi.2by2(hc.strat.over.13, method = "cross.sectional"))
+tidy(epi.2by2(hc.strat.y.13, method = "cross.sectional"))
+tidy(epi.2by2(hc.strat.n.13, method = "cross.sectional"))
 
 ```
 
@@ -699,9 +700,9 @@ smk.strat.y.none <- with(subset(df, curSmk == "Current smoker"),
 smk.strat.n.none <- with(subset(df, curSmk == "Non-smoker"),
                         table(ment14vsNo, mj30day))
 
-epi.2by2(smk.strat.over.none, method = "cross.sectional")
-epi.2by2(smk.strat.y.none, method = "cross.sectional")
-epi.2by2(smk.strat.n.none, method = "cross.sectional")
+tidy(epi.2by2(smk.strat.over.none, method = "cross.sectional"))
+tidy(epi.2by2(smk.strat.y.none, method = "cross.sectional"))
+tidy(epi.2by2(smk.strat.n.none, method = "cross.sectional"))
 
 ```
 
@@ -714,9 +715,9 @@ smk.strat.y.13 <- with(subset(df, curSmk == "Current smoker"),
 smk.strat.n.13 <- with(subset(df, curSmk == "Non-smoker"),
                         table(ment14vs1, mj30day))
 
-epi.2by2(smk.strat.over.13, method = "cross.sectional")
-epi.2by2(smk.strat.y.13, method = "cross.sectional")
-epi.2by2(smk.strat.n.13, method = "cross.sectional")
+tidy(epi.2by2(smk.strat.over.13, method = "cross.sectional"))
+tidy(epi.2by2(smk.strat.y.13, method = "cross.sectional"))
+tidy(epi.2by2(smk.strat.n.13, method = "cross.sectional"))
 
 ```
 
@@ -731,10 +732,10 @@ alc.strat.pm.none <- with(subset(df, curAlc == "Within past month"),
 alc.strat.none.none <- with(subset(df, curAlc == "None in past month"),
                         table(ment14vsNo, mj30day))
 
-epi.2by2(alc.strat.over.none, method = "cross.sectional")
-epi.2by2(alc.strat.pw.none, method = "cross.sectional")
-epi.2by2(alc.strat.pm.none, method = "cross.sectional")
-epi.2by2(alc.strat.none.none, method = "cross.sectional")
+tidy(epi.2by2(alc.strat.over.none, method = "cross.sectional"))
+tidy(epi.2by2(alc.strat.pw.none, method = "cross.sectional"))
+tidy(epi.2by2(alc.strat.pm.none, method = "cross.sectional"))
+tidy(epi.2by2(alc.strat.none.none, method = "cross.sectional"))
 
 ```
 
@@ -749,10 +750,10 @@ alc.strat.pm.13 <- with(subset(df, curAlc == "Within past month"),
 alc.strat.none.13 <- with(subset(df, curAlc == "None in past month"),
                         table(ment14vs1, mj30day))
 
-epi.2by2(alc.strat.over.13, method = "cross.sectional")
-epi.2by2(alc.strat.pw.13, method = "cross.sectional")
-epi.2by2(alc.strat.pm.13, method = "cross.sectional")
-epi.2by2(alc.strat.none.13, method = "cross.sectional")
+tidy(epi.2by2(alc.strat.over.13, method = "cross.sectional"))
+tidy(epi.2by2(alc.strat.pw.13, method = "cross.sectional"))
+tidy(epi.2by2(alc.strat.pm.13, method = "cross.sectional"))
+tidy(epi.2by2(alc.strat.none.13, method = "cross.sectional"))
 
 ```
 
