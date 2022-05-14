@@ -436,8 +436,38 @@ df.cond.14v1[27:28, 1] <- "Health coverage"
 df.cond.14v1[29:31, 1] <- "Current alcohol use"
 df.cond.14v1[32:33, 1] <- "Current tobacco smoking status"
 
+# create an empty dataframe
+df.cond.14v1.crude <- NULL
+
+# make a list of all the levels of exposure and covariates to examine
+covariates <- c("sex", "X_age_g", "race", "edu", "X_incomg", "medcost", "hlthpln1", "curAlc", "curSmk")
+
+# nested for loop
+for (y in covariates) {
+  df.cond.14v1.crude <- as.data.frame(rbind(df.cond.14v1.crude,
+                                             tidy(epi.2by2(table(df[, "ment14vs1"], df$mj30day, df[, y]), 
+                                                           method = "cross.sectional")) %>%
+                                               filter(term == "PR.crude.wald")))
+}
+
+df.cond.14v1.crude <- cbind(Characteristic = 0, df.cond.14v1.crude)
+df.cond.14v1.crude[,2] <- cbind(Characteristic = "Crude", df.cond.14v1.crude[,2])
+
+# Assign variables to new column
+df.cond.14v1.crude[1, 1] <- "Sex"
+df.cond.14v1.crude[2, 1] <- "Age"
+df.cond.14v1.crude[3, 1] <- "Race/Ethnicity"
+df.cond.14v1.crude[4, 1] <- "Education"
+df.cond.14v1.crude[5, 1] <- "Income"
+df.cond.14v1.crude[6, 1] <- "Difficulty affording care"
+df.cond.14v1.crude[7, 1] <- "Health coverage"
+df.cond.14v1.crude[8, 1] <- "Current alcohol use"
+df.cond.14v1.crude[9, 1] <- "Current tobacco smoking status"
+
+t2a <- rbind(df.cond.14v1, df.cond.14v1.crude)
+
 # Create an output table
-t2a <- df.cond.14v1 %>%
+t2a <- t2a %>%
   gt(rowname_col = "term", groupname_col = "Characteristic") %>%
   tab_header(
     title = md("Table 2A: Prevalance Ratios of those with 14+ Poor Mental Health Days Compared to Those with 1-13 Days of Poor Mental Health")) %>%
@@ -470,7 +500,7 @@ y = 0
 #
 # nested for loop
 for (z in covariates) {
-  df.cond.14vNo <-  as.data.frame(rbind(df.cond.14vNo, tidy_epi("ment14vsNo",z)))
+  df.cond.14vNo <-  rbind(df.cond.14vNo, tidy_epi("ment14vsNo",z))
   n = nrow(df.cond.14vNo)-1
   j = 1
    for (x in 1+y:n) {
@@ -494,8 +524,38 @@ df.cond.14vNo[27:28, 1] <- "Health coverage"
 df.cond.14vNo[29:31, 1] <- "Current alcohol use"
 df.cond.14vNo[32:33, 1] <- "Current tobacco smoking status"
 
-# Create an output table
-t2b <- df.cond.14vNo %>%
+# create an empty dataframe
+df.cond.14vNo.crude <- NULL
+
+# make a list of all the levels of exposure and covariates to examine
+covariates <- c("sex", "X_age_g", "race", "edu", "X_incomg", "medcost", "hlthpln1", "curAlc", "curSmk")
+#
+# nested for loop
+for (y in covariates) {
+  df.cond.14vNo.crude <- rbind(df.cond.14vNo.crude,
+                               tidy(epi.2by2(table(df[, "ment14vsNo"], df$mj30day, df[, y]), 
+                                                           method = "cross.sectional")) %>%
+                                               filter(term == "PR.crude.wald"))
+}
+
+df.cond.14vNo.crude <- cbind(Characteristic = 0, df.cond.14vNo.crude)
+df.cond.14vNo.crude[,2] <- cbind(Characteristic = "Crude", df.cond.14vNo.crude[,2])
+
+# Assign variables to new column
+df.cond.14vNo.crude[1, 1] <- "Sex"
+df.cond.14vNo.crude[2, 1] <- "Age"
+df.cond.14vNo.crude[3, 1] <- "Race/Ethnicity"
+df.cond.14vNo.crude[4, 1] <- "Education"
+df.cond.14vNo.crude[5, 1] <- "Income"
+df.cond.14vNo.crude[6, 1] <- "Difficulty affording care"
+df.cond.14vNo.crude[7, 1] <- "Health coverage"
+df.cond.14vNo.crude[8, 1] <- "Current alcohol use"
+df.cond.14vNo.crude[9, 1] <- "Current tobacco smoking status"
+
+t2b <- rbind(df.cond.14vNo, df.cond.14vNo.crude)
+
+# # Create an output table
+t2b <- t2b %>%
   gt(rowname_col = "term", groupname_col = "Characteristic") %>%
   tab_header(
     title = md("Table 2A: Prevalance Ratios of those with 14+ Poor Mental Health Days Compared to Those with No Reported Days of Poor Mental Health")) %>%
@@ -510,9 +570,6 @@ t2b %>%
   gtsave("Table2B_CA_WA.html")
 
 ```
-
-
-
 
 
 
