@@ -558,7 +558,7 @@ t2b <- rbind(df.cond.14vNo, df.cond.14vNo.crude)
 t2b <- t2b %>%
   gt(rowname_col = "term", groupname_col = "Characteristic") %>%
   tab_header(
-    title = md("Table 2A: Prevalance Ratios of those with 14+ Poor Mental Health Days Compared to Those with No Reported Days of Poor Mental Health")) %>%
+    title = md("Table 2B: Prevalance Ratios of those with 14+ Poor Mental Health Days Compared to Those with No Reported Days of Poor Mental Health")) %>%
   tab_spanner(label = "95% Confidence Interval", columns = c(conf.low, conf.high)) %>%
   cols_label(
     estimate = "Adjusted PR",
