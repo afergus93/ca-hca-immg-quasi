@@ -40,6 +40,26 @@ temp <- read_dta('data/MAS_2011_2020_v2.dta') %>%
 tc <- table(temp$year) %>%
   prop.table() # get the proportion of each year's observations 
 
+# tc <- table(temp$sex) %>%
+#   prop.table() # get the proportion of each year's observations 
+# 
+# # Creating new Race/Eth. variable
+# temp$race[temp$"_mrace1" == 4 & temp$"_hispanc" != 1] <- 1 # Non-hispanic Asian
+# temp$race[temp$"_mrace1" == 2 & temp$"_hispanc" != 1] <- 2 # Non-hispanic Black or African American
+# temp$race[temp$"_hispanc" == 1] <- 3 # Hispanic/Latino/a
+# temp$race[temp$"_mrace1" == 7 & temp$"_hispanc" != 1] <- 4 # Non-hispanic Multiracial
+# temp$race[temp$"_mrace1" == 6 & temp$"_hispanc" != 1] <- 5 # Non-hispanic Native American
+# temp$race[temp$"_mrace1" == 3 & temp$"_hispanc" != 1] <- 6 # Non-hispanic other race
+# temp$race[temp$"_mrace1" == 5 & temp$"_hispanc" != 1] <- 7 # Non-hispanic Pacific Islander
+# temp$race[temp$"_mrace1" == 1 & temp$"_hispanc" != 1] <- 8 # Non-hispanic White
+# temp$race[is.na(temp$"_mrace1") & is.na(temp$"_hispanc")] <- NA
+# 
+# tr <- table(temp$race) %>%
+#   prop.table()
+# 
+# ta <- table(temp$"_age_g") %>%
+#   prop.table()
+
 temp$'_llcpwt'[temp$year == 2015] <- temp$'_llcpwt'[temp$year == 2015] * tc[1] # Re-weighting 2015
 temp$'_llcpwt'[temp$year == 2016] <- temp$'_llcpwt'[temp$year == 2016] * tc[2] # Re-weighting 2016
 temp$'_llcpwt'[temp$year == 2017] <- temp$'_llcpwt'[temp$year == 2017] * tc[3] # Re-weighting 2017
@@ -65,7 +85,7 @@ full <- read.csv("data/WA_2015_2019_BRFSS.csv", stringsAsFactors = F) %>%
          X_hispanc,
          educa,
          employ1,
-         X_incomg,
+         income_wa,
          X_smoker3,
          alcday5,
          menthlth,
@@ -104,7 +124,7 @@ df$educa[df$educa == 9] <- NA
 df$employ1[df$employ1 == 9] <- NA
 
 # Assigning the value of 77 and 99 to NA within the income variable
-df$X_incomg[df$X_incomg == 9] <- NA
+df$income_wa[df$income_wa == 77 | df$income_wa == 99] <- NA
 
 # Assigning the value of 9 to NA within the mental health variable
 df$menthlth[df$menthlth == 77 | df$menthlth == 99] <- NA
@@ -201,6 +221,12 @@ df$race[df$X_mrace1 == 5 & df$X_hispanc != 1] <- 7 # Non-hispanic Pacific Island
 df$race[df$X_mrace1 == 1 & df$X_hispanc != 1] <- 8 # Non-hispanic White
 df$race[is.na(df$X_mrace1) & is.na(df$X_hispanc)] <- NA
 
+# Creating new income variable
+df$income_wa[df$income_wa <= 5] <- 1 # Income less than $25,000
+df$income_wa[df$income_wa > 5 & df$income_wa < 8] <- 2 # Income between $25,000 - $75,000
+df$income_wa[df$income_wa >= 8] <- 3 # Income >$75,000
+df$income_wa[is.na(df$income_wa)] <- NA
+
 ```
 
 ```{r}
@@ -251,10 +277,9 @@ df$employ1 <- factor(df$employ1,
                      exclude = NULL)
 
 # Income Factors CREATE NEW VARIABLE
-df$X_incomg <- factor(df$X_incomg,
-                     levels = c(1,2,3,4,5),
-                     labels = c("< $15,000", "$15,000-$24,999", "$25,000-$34,999",
-                                "$35,000-$49,999", "> $50,000"),
+df$income_wa <- factor(df$income_wa,
+                     levels = c(1,2,3),
+                     labels = c("< $35,000", "$35,000-$75,000", "> $75,000"),
                      exclude = NULL)
 
 # Currant Smoker Factors
@@ -329,7 +354,7 @@ label(df$race) <- "Race/Ethnicity"
 label(df$edu) <- "Education"
 
 # Creating income label 
-label(df$X_incomg) <- "Income"
+label(df$income_wa) <- "Household Income"
 
 # Creating health insurance label
 label(df$hlthpln1) <- "No health coverage"
@@ -364,7 +389,7 @@ db <- svydesign(
 
 # main table 1 by current vs non-current cannabis use 
 t1 <- tbl_svysummary(db, by = mj30day, 
-               include = c(X_age_g, sex, race, edu, X_incomg, hlthpln1, medcost, ment14d, curAlc, curSmk),
+               include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, medcost, ment14d, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
   add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
@@ -377,7 +402,7 @@ t1 %>%
 
 # alternative table 1's for demographic exploration
 t1.alt.medcost <- tbl_svysummary(db, by = medcost, 
-               include = c(X_age_g, sex, race, edu, X_incomg, hlthpln1, mj30day, ment14d, curAlc, curSmk),
+               include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, mj30day, ment14d, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
   add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
@@ -386,7 +411,7 @@ t1.alt.medcost <- tbl_svysummary(db, by = medcost,
 
 
 t1.alt.ment14d <- tbl_svysummary(db, by = ment14d, 
-               include = c(X_age_g, sex, race, edu, X_incomg, hlthpln1, mj30day, medcost, curAlc, curSmk),
+               include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, mj30day, medcost, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
   add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
@@ -407,7 +432,7 @@ tidy_epi <- function(x, y) {
 df.cond.14v1 <- NULL
 
 # make a list of all the levels of exposure and covariates to examine
-covariates <- c("sex", "X_age_g", "race", "edu", "X_incomg", "medcost", "hlthpln1", "curAlc", "curSmk")
+covariates <- c("sex", "X_age_g", "race", "edu", "income_wa", "medcost", "hlthpln1", "curAlc", "curSmk")
 y = 0
 #
 # nested for loop
@@ -430,17 +455,17 @@ df.cond.14v1[1:2, 1] <- "Sex"
 df.cond.14v1[3:7, 1] <- "Age"
 df.cond.14v1[8:15, 1] <- "Race/Ethnicity"
 df.cond.14v1[16:19, 1] <- "Education"
-df.cond.14v1[20:24, 1] <- "Income"
-df.cond.14v1[25:26, 1] <- "Difficulty affording care"
-df.cond.14v1[27:28, 1] <- "Health coverage"
-df.cond.14v1[29:31, 1] <- "Current alcohol use"
-df.cond.14v1[32:33, 1] <- "Current tobacco smoking status"
+df.cond.14v1[20:22, 1] <- "Income"
+df.cond.14v1[23:24, 1] <- "Difficulty affording care"
+df.cond.14v1[25:26, 1] <- "Health coverage"
+df.cond.14v1[27:29, 1] <- "Current alcohol use"
+df.cond.14v1[30:31, 1] <- "Current tobacco smoking status"
 
 # create an empty dataframe
 df.cond.14v1.crude <- NULL
 
 # make a list of all the levels of exposure and covariates to examine
-covariates <- c("sex", "X_age_g", "race", "edu", "X_incomg", "medcost", "hlthpln1", "curAlc", "curSmk")
+covariates <- c("sex", "X_age_g", "race", "edu", "income_wa", "medcost", "hlthpln1", "curAlc", "curSmk")
 
 # nested for loop
 for (y in covariates) {
@@ -473,7 +498,7 @@ t2a <- t2a %>%
     title = md("Table 2A: Prevalance Ratios of those with 14+ Poor Mental Health Days Compared to Those with 1-13 Days of Poor Mental Health")) %>%
   tab_spanner(label = "95% Confidence Interval", columns = c(conf.low, conf.high)) %>%
   cols_label(
-    estimate = "Adjusted PR",
+    estimate = "Prevalance Ratio",
     conf.low = "Lower",
     conf.high = "Upper")
 
@@ -495,7 +520,7 @@ tidy_epi <- function(x, y) {
 df.cond.14vNo <- NULL
 
 # make a list of all the levels of exposure and covariates to examine
-covariates <- c("sex", "X_age_g", "race", "edu", "X_incomg", "medcost", "hlthpln1", "curAlc", "curSmk")
+covariates <- c("sex", "X_age_g", "race", "edu", "income_wa", "medcost", "hlthpln1", "curAlc", "curSmk")
 y = 0
 #
 # nested for loop
@@ -518,17 +543,17 @@ df.cond.14vNo[1:2, 1] <- "Sex"
 df.cond.14vNo[3:7, 1] <- "Age"
 df.cond.14vNo[8:15, 1] <- "Race/Ethnicity"
 df.cond.14vNo[16:19, 1] <- "Education"
-df.cond.14vNo[20:24, 1] <- "Income"
-df.cond.14vNo[25:26, 1] <- "Difficulty affording care"
-df.cond.14vNo[27:28, 1] <- "Health coverage"
-df.cond.14vNo[29:31, 1] <- "Current alcohol use"
-df.cond.14vNo[32:33, 1] <- "Current tobacco smoking status"
+df.cond.14vNo[20:22, 1] <- "Income"
+df.cond.14vNo[23:24, 1] <- "Difficulty affording care"
+df.cond.14vNo[25:26, 1] <- "Health coverage"
+df.cond.14vNo[27:29, 1] <- "Current alcohol use"
+df.cond.14vNo[30:31, 1] <- "Current tobacco smoking status"
 
 # create an empty dataframe
 df.cond.14vNo.crude <- NULL
 
 # make a list of all the levels of exposure and covariates to examine
-covariates <- c("sex", "X_age_g", "race", "edu", "X_incomg", "medcost", "hlthpln1", "curAlc", "curSmk")
+covariates <- c("sex", "X_age_g", "race", "edu", "income_wa", "medcost", "hlthpln1", "curAlc", "curSmk")
 #
 # nested for loop
 for (y in covariates) {
@@ -561,7 +586,7 @@ t2b <- t2b %>%
     title = md("Table 2B: Prevalance Ratios of those with 14+ Poor Mental Health Days Compared to Those with No Reported Days of Poor Mental Health")) %>%
   tab_spanner(label = "95% Confidence Interval", columns = c(conf.low, conf.high)) %>%
   cols_label(
-    estimate = "Adjusted PR",
+    estimate = "Prevalance Ratio",
     conf.low = "Lower",
     conf.high = "Upper")
 
