@@ -142,7 +142,7 @@ df$X_smoker3[df$X_smoker3 == 9] <- NA
 df$alcday5[df$alcday5 == 777 | df$alcday5 == 999] <- NA
 
 # Assigning the value of 77 and 99 to NA within the cannabis variable
-df$mj30day[df$mj30day == 9] <- NA
+df$mj30day[df$mj30day == 9 | df$mj30day == 7] <- NA
 
 # Assigning the value of 77 and 99 to NA within the cannabis variable
 df$mjpast30[df$mjpast30 == 77 | df$mjpast30 == 99] <- NA
