@@ -187,6 +187,11 @@ df$ment14vs1[df$ment14d == 1] <- 1
 df$ment14vs1[df$ment14d == 2] <- 2
 df$ment14vs1[is.na(df$ment14d) | df$ment14d == 3] <- NA
 
+# Creating variable for 14+ vs. 1-13 comparison
+df$mentComp[df$ment14d == 1] <- 1
+df$mentComp[df$ment14d == 2 | df$ment14d == 3] <- 2
+df$mentComp[is.na(df$ment14d)] <- NA
+
 # Recoding tobacco usage variable
 df$curSmk[df$X_smoker3 == 1 | df$X_smoker3 == 2] <- 1 # Values 1 and 2 correspond to current smoker
 df$curSmk[df$X_smoker3 == 3 | df$X_smoker3 == 4] <- 2 # Either a former smoker or never smoked
@@ -313,6 +318,12 @@ df$ment14vsNo <- factor(df$ment14vsNo,
                       exclude = NULL)
 
 # Mental Health Factors
+df$mentComp <- factor(df$mentComp,
+                      levels = c(1,2),
+                      labels = c("14+ days", "0-13 days"),
+                      exclude = NULL)
+
+# Mental Health Factors
 df$ment14vs1 <- factor(df$ment14vs1,
                       levels = c(1,2),
                       labels = c("14+ days", "1-13 days"),
@@ -366,6 +377,7 @@ label(df$medcost) <- "Delay medical care due to cost in past year"
 label(df$ment14d) <- "Poor mental health in past month"
 label(df$ment14vsNo) <- "Poor mental health in past month"
 label(df$ment14vs1) <- "Poor mental health in past month"
+label(df$mentComp) <- "Poor mental health in past month"
 
 # Creating alcohol consumption label
 label(df$curAlc) <- "Alcohol consumption"
