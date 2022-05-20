@@ -1,0 +1,394 @@
+---
+title: "WA_Can_HCA_Tbl1/2"
+author: "Daniel Cockson"
+date: "5/19/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Set working directory
+setwd("C:/wa-cannabis-hca")
+
+# Clear workspace 
+rm(list = ls())
+
+# Load required libraries 
+library(survey)
+library(epiR)
+library(tidyverse)
+library(foreign)
+library(haven)
+library(table1)
+library(kableExtra)
+library(gtsummary)
+library(gt)
+library(broom)
+
+# Read in the cleaned data
+load("data/WA_2015_2019_BRFSS_Clean.Rda")
+
+```
+
+```{r}
+#### Creating Table 1 and other exploratory tables ####
+
+db <- svydesign(
+  id = ~1,
+  strata = ~X_ststr,
+  weights = ~X_llcpwt,
+  data = df, 
+  nest = TRUE) 
+
+# main table 1 by current vs non-current cannabis use 
+t1 <- tbl_svysummary(db, by = mj30day, 
+               include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, medcost, mentComp, curAlc, curSmk),
+               statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
+  modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
+  add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
+  modify_caption("**Table 1. Past Month Cannabis User Characteristics**") %>%
+  bold_labels()
+
+t1 %>%
+  as_gt() %>%
+  gtsave("Table1_CA_WA.html")
+
+# alternative table 1's for demographic exploration
+t1.alt.medcost <- tbl_svysummary(db, by = medcost, 
+               include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, mj30day, mentComp, curAlc, curSmk),
+               statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
+  modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
+  add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
+  modify_caption("**Table 1Alt. dHCA Characteristics**") %>%
+  bold_labels()
+
+
+t1.alt.ment14d <- tbl_svysummary(db, by = mentComp, 
+               include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, mj30day, medcost, curAlc, curSmk),
+               statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
+  modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
+  add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
+  modify_caption("**Table 1Alt. dHCA Characteristics**") %>%
+  bold_labels()
+
+```
+
+```{r}
+#### Obtaining all relavant PR's ####
+
+# create an empty dataframe for the adjusted PR's
+adj.PR <- NULL
+
+# Find the crude PR
+adj.PR <- rbind(adj.PR,
+                tidy(epi.2by2(table(df$mentComp, df$mj30day), method = "cross.sectional")) %>%
+                  filter(term == "PR.strata.wald")) 
+
+adj.PR[1,1] <- "Crude" # Assign variable label to the initialized row
+
+# make a list of all the levels of exposure and covariates to examine
+covariates <- c("sex", "X_age_g", "edu", "income_wa", "medcost", "hlthpln1", "curAlc", "curSmk")
+
+# Initialize row count
+i = 2 # Starts at 2 since the first row is the crude estimate
+
+# nested for loop
+for (y in covariates) {
+  if (y == "sex" | y == "medcost" | y == "hlthpln1") { # get the strata specific PR's for if these variables are seen
+    adj.PR <- rbind(adj.PR,
+                    tidy(epi.2by2(table(df$mentComp, df$mj30day, df[, y]), method = "cross.sectional")) %>%
+                      filter(term == "PR.strata.wald")) # pulling stratified estimates
+    adj.PR[i,1] <- levels(df[,y])[1] # Assign first new row the variable name
+    adj.PR[i+1,1] <- levels(df[,y])[2] # Assign second new row the variable name
+    i = i + nlevels(df[,y]) # Jump count by number of factored levels added to the dataframe
+  }
+  else { # Don't pull strata estimates for the other variables
+    adj.PR <- rbind(adj.PR,
+                    tidy(epi.2by2(table(df$mentComp, df$mj30day, df[, y]), method = "cross.sectional")) %>%
+                      filter(term == "PR.mh.wald"))
+    adj.PR[i,1] <- label(df[,y]) # Assign new row the variable name
+    i = i + 1 # Add to count to continue to next row
+  }
+}
+
+#label(df[,y])
+# Adding a column for the factored variables
+adj.PR$level <- NA
+adj.PR <- adj.PR[, c("level", "term", "estimate", "conf.low", "conf.high")]
+
+# Manually assign variable labels
+# adj.PR[1,1] <- "Crude"
+adj.PR[2:3,1] <- "Gender"
+# adj.PR[4,1] <- "Age group (years)"
+# adj.PR[5,1] <- "Education"
+# adj.PR[6,1] <- "Household Income"
+adj.PR[7:8,1] <- "Delayed medical care due to cost"
+adj.PR[9:10,1] <- "Health coverage"
+# adj.PR[11,1] <- "Alcohol consumption"
+# adj.PR[12,1] <- "Tobacco smoking status"
+ 
+```
+
+```{r}
+#### Creating the table 2 ####
+
+adj.PR <- adj.PR %>%
+  gt(rowname_col = "term") %>%  
+  fmt_number(
+    columns = 2:4,
+    decimals = 2
+  ) %>%
+  tab_header(
+    title = md("Table 2: Prevalance Ratios of Cannabis Usage"),
+    subtitle = md("14+ Poor Mental Health Days vs. 0-13 Days of Poor Mental Health Days")) %>%
+  tab_spanner(label = "95% Confidence Interval", columns = c(conf.low, conf.high)) %>%
+  cols_label(
+    estimate = "Prevalance Ratio",
+    conf.low = "Lower",
+    conf.high = "Upper")
+
+# Save the table
+adj.PR %>%
+  gtsave("Table2_CA_WA.html")
+
+```
+
+```{r}
+#### Table 3: Supplemental R/E analysis ####
+
+race.strat <- table(df$mentComp, df$mj30day, df$race) # create a 2by2 tables based on racial groupings
+race.2by2 <- tidy(epi.2by2(race.strat, method = "cross.sectional")) # run the epi.2by2 analysis to get PR's
+
+# Pull the strata specific PR's
+strata.spec <- filter(race.2by2, term == "PR.crude.wald" | term == "PR.strata.wald") 
+strata.spec <- strata.spec[c(9, 1:8),] # Moving the crude row to the top
+
+# create the row labels
+race.labels <- c("Crude",
+                 "Non-Hispanic AIAN",
+                 "Non-Hispanic Asian",
+                 "Non-Hispanic Black or African American",
+                 "Hispanic, Latino/a, or Spanish origin",
+                 "Non-Hispanic NHPI",
+                 "Non-Hispanic other race",
+                 "Non-Hispanic two or more races",
+                 "Non-Hispanic White")
+
+# Assign row labels
+for (i in 1:9) {
+  strata.spec[i,1] <- race.labels[i] # assign the label column with the correct variable name
+}
+
+```
+
+```{r}
+#### Creating the table 3 ####
+
+strata.spec <- strata.spec %>%
+  gt(rowname_col = "term", groupname_col = "Characteristic") %>%  
+  fmt_number(
+    columns = 2:4,
+    decimals = 2
+  ) %>%
+  tab_header(
+    title = md("Table 3: Prevalance Ratios of Cannabis Usage by Race/Ethnicity"),
+    subtitle = md("14+ Poor Mental Health Days vs. 0-13 Days of Poor Mental Health Days")) %>%
+  tab_spanner(label = "95% Confidence Interval", columns = c(conf.low, conf.high)) %>%
+  cols_label(
+    estimate = "Prevalance Ratio",
+    conf.low = "Lower",
+    conf.high = "Upper")
+
+# Save the table
+strata.spec %>%
+  gtsave("Table3_CA_WA.html")
+
+```
+
+```{r}
+#### Doing analysis based on Latine populations ####
+hisp.df <- subset(df, race == "Hispanic, Latino/a, or Spanish origin")
+
+# create an empty dataframe for the adjusted PR's
+hisp.PR <- NULL
+
+# Find the crude PR
+hisp.PR <- rbind(hisp.PR,
+                tidy(epi.2by2(table(hisp.df$mentComp, hisp.df$mj30day), method = "cross.sectional")) %>%
+                  filter(term == "PR.strata.wald"))
+
+# make a list of all the levels of exposure and covariates to examine
+covariates <- c("sex", "X_age_g", "edu", "income_wa", "medcost", "hlthpln1", "curAlc", "curSmk")
+
+# nested for loop
+for (y in covariates) { # For each covariate in the covariate list
+  hisp.PR <- rbind(hisp.PR, # Create a new row for each covariate
+                  tidy(epi.2by2(table(hisp.df$mentComp, hisp.df$mj30day, hisp.df[, y]), method = "cross.sectional")) %>%
+                    filter(term == "PR.mh.wald")) # Find the PR for the mh adjustment
+}
+
+# Assign variables to new column
+row.labels <- c("Crude", "Sex", "Age", "Education", "Income", "Difficulty affording care", "Health coverage", "Current alcohol use", "Current tobacco smoking status")
+
+for (i in 1:9) {
+  hisp.PR[i,1] <- row.labels[i] # assign the label column with the correct variable name
+}
+
+```
+
+```{r}
+#### Creating the table 4 ####
+
+hisp.PR <- hisp.PR %>%
+  gt(rowname_col = "term", groupname_col = "Characteristic") %>%  
+  fmt_number(
+    columns = 2:4,
+    decimals = 2
+  ) %>%
+  tab_header(
+    title = md("Table 4: Prevalance Ratios of Cannabis Usage for Latine Populations"),
+    subtitle = md("14+ Poor Mental Health Days vs. 0-13 Days of Poor Mental Health Days")) %>%
+  tab_spanner(label = "95% Confidence Interval", columns = c(conf.low, conf.high)) %>%
+  cols_label(
+    estimate = "Prevalance Ratio",
+    conf.low = "Lower",
+    conf.high = "Upper")
+
+# Save the table
+hisp.PR %>%
+  gtsave("Table4_CA_WA.html")
+
+```
+
+```{r}
+#### Daniels Fun Playground for Adjustment ####
+df$sex_inc <- case_when(!is.na(df$sex) & 
+                               !is.na(df$income_wa) ~
+                               paste0(df$sex, "_", df$income_wa)) 
+
+df$age_inc <- case_when(!is.na(df$X_age_g) & 
+                               !is.na(df$income_wa) ~
+                               paste0(df$X_age_g, "_", df$income_wa))
+
+df$race_inc <- case_when(!is.na(df$race) & 
+                               !is.na(df$income_wa) ~
+                               paste0(df$race, "_", df$income_wa))
+
+df$edu_inc <- case_when(!is.na(df$edu) & 
+                               !is.na(df$income_wa) ~
+                               paste0(df$edu, "_", df$income_wa))
+
+df$med_inc <- case_when(!is.na(df$medcost) & 
+                               !is.na(df$income_wa) ~
+                               paste0(df$medcost, "_", df$income_wa))
+
+df$HC_inc <- case_when(!is.na(df$hlthpln1) & 
+                               !is.na(df$income_wa) ~
+                               paste0(df$hlthpln1, "_", df$income_wa))
+
+df$Alc_inc <- case_when(!is.na(df$curAlc) & 
+                               !is.na(df$income_wa) ~
+                               paste0(df$curAlc, "_", df$income_wa))
+
+df$smk_inc <- case_when(!is.na(df$curSmk) & 
+                               !is.na(df$income_wa) ~
+                               paste0(df$curSmk, "_", df$income_wa))
+
+
+
+
+# create an empty dataframe for the adjusted PR's
+test.PR <- NULL
+
+# Find the crude PR
+test.PR <- rbind(test.PR,
+                tidy(epi.2by2(table(df$mentComp, df$mj30day, df$income_wa), method = "cross.sectional")) %>%
+                  filter(term == "PR.crude.wald"))
+
+# make a list of all the levels of exposure and covariates to examine
+covariates <- c("sex_inc", "age_inc", "race_inc", "edu_inc", "med_inc", "HC_inc", "Alc_inc", "smk_inc")
+
+# nested for loop
+for (y in covariates) { # For each covariate in the covariate list
+  test.PR <- rbind(test.PR, # Create a new row for each covariate
+                  tidy(epi.2by2(table(df$mentComp, df$mj30day, df[, y]), method = "cross.sectional")) %>%
+                    filter(term == "PR.mh.wald")) # Find the PR for the mh adjustment
+}
+
+# Assign variables to new column
+row.labels <- c("Crude", "Sex", "Age", "Race", "Education", "Difficulty affording care", "Health coverage", "Current alcohol use", "Current tobacco smoking status")
+
+for (i in 1:9) {
+  test.PR[i,1] <- row.labels[i] # assign the label column with the correct variable name
+}
+
+
+```
+
+```{r}
+#### Daniels Fun Playground for Adjustment ####
+df$age_sex <- case_when(!is.na(df$X_age_g) & 
+                               !is.na(df$sex) ~
+                               paste0(df$X_age_g, "_", df$sex))
+
+df$race_sex <- case_when(!is.na(df$race) & 
+                               !is.na(df$sex) ~
+                               paste0(df$race, "_", df$sex))
+
+df$inc_sex <- case_when(!is.na(df$income_wa) & 
+                               !is.na(df$sex) ~
+                               paste0(df$income_wa, "_", df$sex))
+
+df$edu_sex <- case_when(!is.na(df$edu) & 
+                               !is.na(df$sex) ~
+                               paste0(df$edu, "_", df$sex))
+
+df$med_sex <- case_when(!is.na(df$medcost) & 
+                               !is.na(df$sex) ~
+                               paste0(df$medcost, "_", df$sex))
+
+df$HC_sex <- case_when(!is.na(df$hlthpln1) & 
+                               !is.na(df$sex) ~
+                               paste0(df$hlthpln1, "_", df$sex))
+
+df$Alc_sex <- case_when(!is.na(df$curAlc) & 
+                               !is.na(df$sex) ~
+                               paste0(df$curAlc, "_", df$sex))
+
+df$smk_sex <- case_when(!is.na(df$curSmk) & 
+                               !is.na(df$sex) ~
+                               paste0(df$curSmk, "_", df$sex))
+
+
+
+
+# create an empty dataframe for the adjusted PR's
+test.PR <- NULL
+
+# Find the crude PR
+test.PR <- rbind(test.PR,
+                tidy(epi.2by2(table(df$mentComp, df$mj30day, df$sex), method = "cross.sectional")) %>%
+                  filter(term == "PR.crude.wald"))
+
+# make a list of all the levels of exposure and covariates to examine
+covariates <- c("age_sex", "race_sex", "inc_sex", "edu_sex", "med_sex", "HC_sex", "Alc_sex", "smk_sex")
+
+# nested for loop
+for (y in covariates) { # For each covariate in the covariate list
+  test.PR <- rbind(test.PR, # Create a new row for each covariate
+                  tidy(epi.2by2(table(df$mentComp, df$mj30day, df[, y]), method = "cross.sectional")) %>%
+                    filter(term == "PR.mh.wald")) # Find the PR for the mh adjustment
+}
+
+# Assign variables to new column
+row.labels <- c("Crude", "Age", "Race", "Income", "Education", "Difficulty affording care", "Health coverage", "Current alcohol use", "Current tobacco smoking status")
+
+for (i in 1:9) {
+  test.PR[i,1] <- row.labels[i] # assign the label column with the correct variable name
+}
+
+
+```
+
+
