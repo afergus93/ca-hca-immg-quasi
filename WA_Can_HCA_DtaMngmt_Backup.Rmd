@@ -88,7 +88,7 @@ full <- read.csv("data/WA_2015_2019_BRFSS.csv", stringsAsFactors = F) %>%
          income_wa,
          X_smoker3,
          alcday5,
-         menthlth,
+         X_ment14d,
          hlthpln1,
          medcost,
          mjpast30,
@@ -127,7 +127,7 @@ df$employ1[df$employ1 == 9] <- NA
 df$income_wa[df$income_wa == 77 | df$income_wa == 99] <- NA
 
 # Assigning the value of 9 to NA within the mental health variable
-df$menthlth[df$menthlth == 77 | df$menthlth == 99] <- NA
+df$X_ment14d[df$X_ment14d == 9] <- NA
 
 # Assigning the value of 7 and 9 to NA within the insurance variable
 df$hlthpln1[df$hlthpln1 == 7 | df$hlthpln1 == 9] <- NA
@@ -142,7 +142,7 @@ df$X_smoker3[df$X_smoker3 == 9] <- NA
 df$alcday5[df$alcday5 == 777 | df$alcday5 == 999] <- NA
 
 # Assigning the value of 77 and 99 to NA within the cannabis variable
-df$mj30day[df$mj30day == 7 | df$mj30day == 9] <- NA
+df$mj30day[df$mj30day == 9] <- NA
 
 # Assigning the value of 77 and 99 to NA within the cannabis variable
 df$mjpast30[df$mjpast30 == 77 | df$mjpast30 == 99] <- NA
@@ -164,7 +164,7 @@ df$mjpast30[df$mjpast30 == 77 | df$mjpast30 == 99] <- NA
 #### Dropping All Observations Where MJ or HCA is NA ####
 
 df <- df %>%
-  filter(!is.na(mj30day) & !is.na(medcost) & !is.na(menthlth)) %>% # filter out any missingness associated with exposure/outcome
+  filter(!is.na(mj30day) & !is.na(medcost) & !is.na(X_ment14d)) %>% # filter out any missingness associated with exposure/outcome
   rename(zipcodeTemp1 = zipcode, zipcodeTemp2 = zipcode1) %>% # Rename zipcode variables
   mutate(zipcode = coalesce(zipcodeTemp1, zipcodeTemp2)) %>% # Combine the zipcode variables across the two columns
   select(-c(zipcodeTemp1, zipcodeTemp2)) %>% # Drop old zipcode variables
@@ -172,25 +172,9 @@ df <- df %>%
 
 # summary(df)
 
-# Recoding mental health variable 
-df$ment14d[df$menthlth == 88] <- 3 # No poor mental health days in the past 30 days
-df$ment14d[df$menthlth >= 1 & df$menthlth <= 13] <- 2 # Between 1 and 13 days of poor mental health in past 30 days
-df$ment14d[df$menthlth > 13 & df$menthlth <= 30] <- 1 # Between 14 and 30 days of poor mental health in past 30 days
-
-# Creating variable for 14+ vs. none comparison
-df$ment14vsNo[df$ment14d == 1] <- 1
-df$ment14vsNo[df$ment14d == 3] <- 2
-df$ment14vsNo[is.na(df$ment14d) | df$ment14d == 2] <- NA
-
-# Creating variable for 14+ vs. 1-13 comparison
-df$ment14vs1[df$ment14d == 1] <- 1
-df$ment14vs1[df$ment14d == 2] <- 2
-df$ment14vs1[is.na(df$ment14d) | df$ment14d == 3] <- NA
-
-# Creating variable for 14+ vs. 1-13 comparison
-df$mentComp[df$ment14d == 1] <- 1
-df$mentComp[df$ment14d == 2 | df$ment14d == 3] <- 2
-df$mentComp[is.na(df$ment14d)] <- NA
+# Creating variable for 14+ vs. 0-13 comparison
+df$mentComp[df$X_ment14d == 3] <- 1 
+df$mentComp[df$X_ment14d == 1 | df$X_ment14d == 2] <- 2
 
 # Recoding tobacco usage variable
 df$curSmk[df$X_smoker3 == 1 | df$X_smoker3 == 2] <- 1 # Values 1 and 2 correspond to current smoker
@@ -306,27 +290,9 @@ df$curAlcSmk <- factor(df$curAlcSmk,
                       exclude = NULL)
 
 # Mental Health Factors
-df$ment14d <- factor(df$ment14d,
-                      levels = c(1,2,3),
-                      labels = c("14+ days", "1-13 days", "No days"),
-                      exclude = NULL)
-
-# Mental Health Factors
-df$ment14vsNo <- factor(df$ment14vsNo,
-                      levels = c(1,2),
-                      labels = c("14+ days", "No days"),
-                      exclude = NULL)
-
-# Mental Health Factors
 df$mentComp <- factor(df$mentComp,
                       levels = c(1,2),
                       labels = c("14+ days", "0-13 days"),
-                      exclude = NULL)
-
-# Mental Health Factors
-df$ment14vs1 <- factor(df$ment14vs1,
-                      levels = c(1,2),
-                      labels = c("14+ days", "1-13 days"),
                       exclude = NULL)
 
 # Health Insurance Factor
@@ -374,9 +340,6 @@ label(df$hlthpln1) <- "No health coverage"
 label(df$medcost) <- "Delay medical care due to cost in past year"
 
 # Creating mental health label
-label(df$ment14d) <- "Poor mental health in past month"
-label(df$ment14vsNo) <- "Poor mental health in past month"
-label(df$ment14vs1) <- "Poor mental health in past month"
 label(df$mentComp) <- "Poor mental health in past month"
 
 # Creating alcohol consumption label
