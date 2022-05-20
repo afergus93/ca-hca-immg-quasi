@@ -32,6 +32,44 @@ df <- read.csv("data/WA_2015_2019_BRFSS_Clean.csv")
 ```
 
 ```{r}
+#### Creating Labels for each variable ####
+
+# Creating age label
+label(df$X_age_g) <- "Age group (yrs)"
+
+# Creating gender label 
+label(df$sex) <- "Gender"
+
+# Creating race label
+label(df$race) <- "Race/Ethnicity"
+
+# Creating education label
+label(df$edu) <- "Education"
+
+# Creating income label 
+label(df$income_wa) <- "Household Income"
+
+# Creating health insurance label
+label(df$hlthpln1) <- "No health coverage"
+
+# Creating health cost label
+label(df$medcost) <- "Delay medical care due to cost in past year"
+
+# Creating mental health label
+label(df$mentComp) <- "Poor mental health in past month"
+
+# Creating alcohol consumption label
+label(df$curAlc) <- "Alcohol consumption"
+
+# Creating smoking status label
+label(df$curSmk) <- "Tobacco smoking status"
+
+# Creating cannabis usage label
+label(df$mj30day) <- "Cannabis use in past month"
+
+```
+
+```{r}
 
 db <- svydesign(
   id = ~1,
@@ -42,7 +80,7 @@ db <- svydesign(
 
 # main table 1 by current vs non-current cannabis use 
 t1 <- tbl_svysummary(db, by = mj30day, 
-               include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, medcost, ment14d, curAlc, curSmk),
+               include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, medcost, mentComp, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
   add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
@@ -55,7 +93,7 @@ t1 %>%
 
 # alternative table 1's for demographic exploration
 t1.alt.medcost <- tbl_svysummary(db, by = medcost, 
-               include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, mj30day, ment14d, curAlc, curSmk),
+               include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, mj30day, mentComp, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
   add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
@@ -63,7 +101,7 @@ t1.alt.medcost <- tbl_svysummary(db, by = medcost,
   bold_labels()
 
 
-t1.alt.ment14d <- tbl_svysummary(db, by = ment14d, 
+t1.alt.ment14d <- tbl_svysummary(db, by = mentComp, 
                include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, mj30day, medcost, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
@@ -74,81 +112,45 @@ t1.alt.ment14d <- tbl_svysummary(db, by = ment14d,
 ```
 
 ```{r}
-#### Condensing results into one dataframe ####
-tidy_epi <- function(x, y) {
-  tidy(epi.2by2(table(df[, x], df$mj30day, df[, y]), method = "cross.sectional")) %>%
-  filter(term == "PR.strata.wald")
-}
-# | term == "PR.crude.wald"
+# create an empty dataframe for the adjusted PR's
+adj.PR <- NULL
 
-# create an empty dataframe
-df.cond.14v1 <- NULL
-
-# make a list of all the levels of exposure and covariates to examine
-covariates <- c("sex", "X_age_g", "race", "edu", "income_wa", "medcost", "hlthpln1", "curAlc", "curSmk")
-y = 0
-#
-# nested for loop
-for (z in covariates) {
-  df.cond.14v1 <-  as.data.frame(rbind(df.cond.14v1, tidy_epi("ment14vs1",z)))
-  n = nrow(df.cond.14v1)-1
-  j = 1
-   for (x in 1+y:n) {
-     df.cond.14v1[x,1] <- levels(df[,z])[j]
-     j = j + 1
-   }
-  y = nrow(df.cond.14v1)
-}
-
-# Labeling by variable
-df.cond.14v1 <- cbind(Characteristic = 0, df.cond.14v1)
-
-# Assign variables to new column
-df.cond.14v1[1:2, 1] <- "Sex"
-df.cond.14v1[3:7, 1] <- "Age"
-df.cond.14v1[8:15, 1] <- "Race/Ethnicity"
-df.cond.14v1[16:19, 1] <- "Education"
-df.cond.14v1[20:22, 1] <- "Income"
-df.cond.14v1[23:24, 1] <- "Difficulty affording care"
-df.cond.14v1[25:26, 1] <- "Health coverage"
-df.cond.14v1[27:29, 1] <- "Current alcohol use"
-df.cond.14v1[30:31, 1] <- "Current tobacco smoking status"
-
-# create an empty dataframe
-df.cond.14v1.crude <- NULL
+# Find the crude PR
+adj.PR <- rbind(adj.PR,
+                tidy(epi.2by2(table(df$mentComp, df$mj30day), method = "cross.sectional")) %>%
+                  filter(term == "PR.strata.wald"))
 
 # make a list of all the levels of exposure and covariates to examine
 covariates <- c("sex", "X_age_g", "race", "edu", "income_wa", "medcost", "hlthpln1", "curAlc", "curSmk")
 
 # nested for loop
-for (y in covariates) {
-  df.cond.14v1.crude <- as.data.frame(rbind(df.cond.14v1.crude,
-                                             tidy(epi.2by2(table(df[, "ment14vs1"], df$mj30day, df[, y]), 
-                                                           method = "cross.sectional")) %>%
-                                               filter(term == "PR.crude.wald")))
+for (y in covariates) { # For each covariate in the covariate list
+  adj.PR <- rbind(adj.PR, # Create a new row for each covariate
+                  tidy(epi.2by2(table(df$mentComp, df$mj30day, df[, y]), method = "cross.sectional")) %>%
+                    filter(term == "PR.mh.wald")) # Find the PR for the mh adjustment
 }
 
-df.cond.14v1.crude <- cbind(Characteristic = 0, df.cond.14v1.crude)
-df.cond.14v1.crude[,2] <- cbind(Characteristic = "Crude", df.cond.14v1.crude[,2])
-
 # Assign variables to new column
-df.cond.14v1.crude[1, 1] <- "Sex"
-df.cond.14v1.crude[2, 1] <- "Age"
-df.cond.14v1.crude[3, 1] <- "Race/Ethnicity"
-df.cond.14v1.crude[4, 1] <- "Education"
-df.cond.14v1.crude[5, 1] <- "Income"
-df.cond.14v1.crude[6, 1] <- "Difficulty affording care"
-df.cond.14v1.crude[7, 1] <- "Health coverage"
-df.cond.14v1.crude[8, 1] <- "Current alcohol use"
-df.cond.14v1.crude[9, 1] <- "Current tobacco smoking status"
+row.labels <- c("Crude", "Sex", "Age", "Race/Ethnicity", "Education", "Income", "Difficulty affording care", "Health coverage", "Current alcohol use", "Current tobacco smoking status")
 
-t2a <- rbind(df.cond.14v1, df.cond.14v1.crude)
+for (i in 1:10) {
+  adj.PR[i,1] <- row.labels[i] # assign the label column with the correct variable name
+}
 
-# Create an output table
-t2a <- t2a %>%
-  gt(rowname_col = "term", groupname_col = "Characteristic") %>%
+```
+
+```{r}
+# Creating the table 2
+
+adj.PR <- adj.PR %>%
+  gt(rowname_col = "term", groupname_col = "Characteristic") %>%  
+  fmt_number(
+    columns = 2:4,
+    decimals = 2
+  ) %>%
   tab_header(
-    title = md("Table 2A: Prevalance Ratios of those with 14+ Poor Mental Health Days Compared to Those with 1-13 Days of Poor Mental Health")) %>%
+    title = md("Table 2: Prevalance Ratios of Cannabis Usage"),
+    subtitle = md("14+ Poor Mental Health Days vs. 0-13 Days of Poor Mental Health Days")) %>%
   tab_spanner(label = "95% Confidence Interval", columns = c(conf.low, conf.high)) %>%
   cols_label(
     estimate = "Prevalance Ratio",
@@ -156,146 +158,10 @@ t2a <- t2a %>%
     conf.high = "Upper")
 
 # Save the table
-t2a %>%
-  gtsave("Table2A_CA_WA.html")
+adj.PR %>%
+  gtsave("Table2_CA_WA.html")
 
 ```
 
-```{r}
-#### Condensing results into one dataframe ####
-tidy_epi <- function(x, y) {
-  tidy(epi.2by2(table(df[, x], df$mj30day, df[, y]), method = "cross.sectional")) %>%
-  filter(term == "PR.strata.wald")
-}
-# | term == "PR.crude.wald"
 
-# create an empty dataframe
-df.cond.14vNo <- NULL
-
-# make a list of all the levels of exposure and covariates to examine
-covariates <- c("sex", "X_age_g", "race", "edu", "income_wa", "medcost", "hlthpln1", "curAlc", "curSmk")
-y = 0
-#
-# nested for loop
-for (z in covariates) {
-  df.cond.14vNo <-  rbind(df.cond.14vNo, tidy_epi("ment14vsNo",z))
-  n = nrow(df.cond.14vNo)-1
-  j = 1
-   for (x in 1+y:n) {
-     df.cond.14vNo[x,1] <- levels(df[,z])[j]
-     j = j + 1
-   }
-  y = nrow(df.cond.14vNo)
-}
-
-# Labeling by variable
-df.cond.14vNo <- cbind(Characteristic = 0, df.cond.14vNo)
-
-# Assign variables to new column
-df.cond.14vNo[1:2, 1] <- "Sex"
-df.cond.14vNo[3:7, 1] <- "Age"
-df.cond.14vNo[8:15, 1] <- "Race/Ethnicity"
-df.cond.14vNo[16:19, 1] <- "Education"
-df.cond.14vNo[20:22, 1] <- "Income"
-df.cond.14vNo[23:24, 1] <- "Difficulty affording care"
-df.cond.14vNo[25:26, 1] <- "Health coverage"
-df.cond.14vNo[27:29, 1] <- "Current alcohol use"
-df.cond.14vNo[30:31, 1] <- "Current tobacco smoking status"
-
-# create an empty dataframe
-df.cond.14vNo.crude <- NULL
-
-# make a list of all the levels of exposure and covariates to examine
-covariates <- c("sex", "X_age_g", "race", "edu", "income_wa", "medcost", "hlthpln1", "curAlc", "curSmk")
-#
-# nested for loop
-for (y in covariates) {
-  df.cond.14vNo.crude <- rbind(df.cond.14vNo.crude,
-                               tidy(epi.2by2(table(df[, "ment14vsNo"], df$mj30day, df[, y]), 
-                                                           method = "cross.sectional")) %>%
-                                               filter(term == "PR.crude.wald"))
-}
-
-df.cond.14vNo.crude <- cbind(Characteristic = 0, df.cond.14vNo.crude)
-df.cond.14vNo.crude[,2] <- cbind(Characteristic = "Crude", df.cond.14vNo.crude[,2])
-
-# Assign variables to new column
-df.cond.14vNo.crude[1, 1] <- "Sex"
-df.cond.14vNo.crude[2, 1] <- "Age"
-df.cond.14vNo.crude[3, 1] <- "Race/Ethnicity"
-df.cond.14vNo.crude[4, 1] <- "Education"
-df.cond.14vNo.crude[5, 1] <- "Income"
-df.cond.14vNo.crude[6, 1] <- "Difficulty affording care"
-df.cond.14vNo.crude[7, 1] <- "Health coverage"
-df.cond.14vNo.crude[8, 1] <- "Current alcohol use"
-df.cond.14vNo.crude[9, 1] <- "Current tobacco smoking status"
-
-t2b <- rbind(df.cond.14vNo, df.cond.14vNo.crude)
-
-# # Create an output table
-t2b <- t2b %>%
-  gt(rowname_col = "term", groupname_col = "Characteristic") %>%
-  tab_header(
-    title = md("Table 2B: Prevalance Ratios of those with 14+ Poor Mental Health Days Compared to Those with No Reported Days of Poor Mental Health")) %>%
-  tab_spanner(label = "95% Confidence Interval", columns = c(conf.low, conf.high)) %>%
-  cols_label(
-    estimate = "Prevalance Ratio",
-    conf.low = "Lower",
-    conf.high = "Upper")
-
-# Save the table
-t2b %>%
-  gtsave("Table2B_CA_WA.html")
-
-```
-
-```{r}
-df$hca_edu <- case_when(!is.na(df$income_wa) &
-                          !is.na(df$curAlcSmk) &
-                          !is.na(df$medcost) ~
-                          paste0(df$income_wa, "_", df$curAlcSmk, "_", df$medcost))
-
-with(df, table(hca_edu, mj30day))
-
-mh_tbl1 <- with(df,
-                table(ment14vs1, mj30day, hca_edu))
-
-d <- tidy(epi.2by2(mh_tbl1, method = "cross.sectional")) 
-
-# %>%
-#   filter(term == "PR.crude.wald")
-
-mh_tbl1 <- with(subset(df, 
-                       medcost == "No"),
-                table(ment14vs1, mj30day, hca_edu))
-
-tidy(epi.2by2(mh_tbl1, method = "cross.sectional")) %>%
-  filter(term == "PR.crude.wald")
-
-
-
-mh_tbl1 <- with(df,
-                table(ment14vs1, mj30day, sex))
-d <- tidy(epi.2by2(mh_tbl1, method = "cross.sectional"))
-
-# make a "adjusted" row on the current table which is this analysis. 
-
-# look into svymean
-```
-
-
-
-
-
-
-
-
-```{r}
-medcost.strat.y <- with(subset(df, medcost == "Yes" & race == "Hispanic, Latino/a, or Spanish origin"),
-                        table(ment14d, mj30day))
-medcost.strat.n <- with(subset(df, medcost == "No" & race == "Hispanic, Latino/a, or Spanish origin"),
-                        table(ment14d, mj30day))
-table
-epi.2by2(medcost.strat.n, method = "cross.sectional")
-```
 
