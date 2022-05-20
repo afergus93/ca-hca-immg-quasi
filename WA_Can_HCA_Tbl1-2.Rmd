@@ -136,6 +136,7 @@ race.2by2 <- tidy(epi.2by2(race.strat, method = "cross.sectional")) # run the ep
 
 # Pull the strata specific PR's
 strata.spec <- filter(race.2by2, term == "PR.crude.wald" | term == "PR.strata.wald") 
+strata.spec <- strata.spec[c(9, 1:8),] # Moving the crude row to the top
 
 # create the row labels
 race.labels <- c("Crude",
