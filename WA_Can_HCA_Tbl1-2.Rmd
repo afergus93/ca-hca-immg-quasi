@@ -32,6 +32,7 @@ load("data/WA_2015_2019_BRFSS_Clean.Rda")
 ```
 
 ```{r}
+#### Creating Table 1 and other exploratory tables ####
 
 db <- svydesign(
   id = ~1,
@@ -74,6 +75,8 @@ t1.alt.ment14d <- tbl_svysummary(db, by = mentComp,
 ```
 
 ```{r}
+#### Obtaining all relavant PR's ####
+
 # create an empty dataframe for the adjusted PR's
 adj.PR <- NULL
 
@@ -102,7 +105,7 @@ for (i in 1:10) {
 ```
 
 ```{r}
-# Creating the table 2
+#### Creating the table 2 ####
 
 adj.PR <- adj.PR %>%
   gt(rowname_col = "term", groupname_col = "Characteristic") %>%  
@@ -124,6 +127,58 @@ adj.PR %>%
   gtsave("Table2_CA_WA.html")
 
 ```
+
+```{r}
+#### Table 3: Supplemental R/E analysis ####
+
+race.strat <- table(df$mentComp, df$mj30day, df$race) # create a 2by2 tables based on racial groupings
+race.2by2 <- tidy(epi.2by2(race.strat, method = "cross.sectional")) # run the epi.2by2 analysis to get PR's
+
+# Pull the strata specific PR's
+strata.spec <- filter(race.2by2, term == "PR.crude.wald" | term == "PR.strata.wald") 
+
+# create the row labels
+race.labels <- c("Crude",
+                 "Non-Hispanic AIAN",
+                 "Non-Hispanic Asian",
+                 "Non-Hispanic Black or African American",
+                 "Hispanic, Latino/a, or Spanish origin",
+                 "Non-Hispanic NHPI",
+                 "Non-Hispanic other race",
+                 "Non-Hispanic two or more races",
+                 "Non-Hispanic White")
+
+# Assign row labels
+for (i in 1:9) {
+  strata.spec[i,1] <- race.labels[i] # assign the label column with the correct variable name
+}
+
+```
+
+```{r}
+#### Creating the table 3 ####
+
+strata.spec <- strata.spec %>%
+  gt(rowname_col = "term", groupname_col = "Characteristic") %>%  
+  fmt_number(
+    columns = 2:4,
+    decimals = 2
+  ) %>%
+  tab_header(
+    title = md("Table 3: Prevalance Ratios of Cannabis Usage by Race/Ethnicity"),
+    subtitle = md("14+ Poor Mental Health Days vs. 0-13 Days of Poor Mental Health Days")) %>%
+  tab_spanner(label = "95% Confidence Interval", columns = c(conf.low, conf.high)) %>%
+  cols_label(
+    estimate = "Prevalance Ratio",
+    conf.low = "Lower",
+    conf.high = "Upper")
+
+# Save the table
+strata.spec %>%
+  gtsave("Table3_CA_WA.html")
+
+```
+
 
 
 
