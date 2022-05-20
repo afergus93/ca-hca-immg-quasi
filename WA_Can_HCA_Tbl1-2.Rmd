@@ -27,45 +27,7 @@ library(gt)
 library(broom)
 
 # Read in the cleaned data
-df <- read.csv("data/WA_2015_2019_BRFSS_Clean.csv")
-
-```
-
-```{r}
-#### Creating Labels for each variable ####
-
-# Creating age label
-label(df$X_age_g) <- "Age group (yrs)"
-
-# Creating gender label 
-label(df$sex) <- "Gender"
-
-# Creating race label
-label(df$race) <- "Race/Ethnicity"
-
-# Creating education label
-label(df$edu) <- "Education"
-
-# Creating income label 
-label(df$income_wa) <- "Household Income"
-
-# Creating health insurance label
-label(df$hlthpln1) <- "No health coverage"
-
-# Creating health cost label
-label(df$medcost) <- "Delay medical care due to cost in past year"
-
-# Creating mental health label
-label(df$mentComp) <- "Poor mental health in past month"
-
-# Creating alcohol consumption label
-label(df$curAlc) <- "Alcohol consumption"
-
-# Creating smoking status label
-label(df$curSmk) <- "Tobacco smoking status"
-
-# Creating cannabis usage label
-label(df$mj30day) <- "Cannabis use in past month"
+load("data/WA_2015_2019_BRFSS_Clean.Rda")
 
 ```
 
