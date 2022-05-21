@@ -1,0 +1,186 @@
+---
+title: "WA_Can_HCA_Prevalences"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Set working directory
+setwd("C:/wa-cannabis-hca")
+
+# Clear workspace 
+rm(list = ls())
+
+
+getwd()
+# Load required libraries 
+library(survey)
+library(epiR)
+library(tidyverse)
+library(foreign)
+library(haven)
+library(table1)
+library(kableExtra)
+library(gtsummary)
+library(gt)
+library(broom)
+
+# load in dataset saved from WA_Can_HCA_DtaMngmt_Backup file
+load(file = "data/WA_2015_2019_BRFSS_Clean.Rda")
+
+
+
+
+```
+
+```{r}
+#################################
+#
+# CALCULATING PREVALENCES & 95%CI
+#
+#################################
+
+
+# defining a function to calculate prevalences from a 2x2 table in few lines
+epi_conf_alt <- function(x) {
+  ci <- epi.conf(cbind(x[1:2], rowSums(x)), 
+                 ctype = "prevalence", method = "exact", 
+                 design = 1, conf.level = 0.95) * 100
+  return(ci)
+}
+
+## Overall Prevalence, Ment14d vs Ment0to13d
+
+overall.CU <- with(df, table(mentComp, mj30day))
+epi_conf_alt(overall.CU)
+
+## yearly prevalence changes in cannabis use by mental health status
+
+overall.2015 <- with(subset(df, year == 2015), 
+                     table(mentComp, mj30day))
+
+overall.2016 <- with(subset(df, year == 2016), 
+                     table(mentComp, mj30day))
+
+overall.2017 <- with(subset(df, year == 2017), 
+                     table(mentComp, mj30day))
+
+overall.2018 <- with(subset(df, year == 2018), 
+                     table(mentComp, mj30day))
+
+overall.2019 <- with(subset(df, year == 2019), 
+                     table(mentComp, mj30day))
+
+epi_conf_alt(overall.2015)
+epi_conf_alt(overall.2016)
+epi_conf_alt(overall.2017)
+epi_conf_alt(overall.2018)
+epi_conf_alt(overall.2019)
+
+
+### MEDCOST
+
+medcost.strat.y <- with(subset(df, medcost == "Yes"),
+                        table(mentComp, mj30day))
+medcost.strat.n <- with(subset(df, medcost == "No"),
+                        table(mentComp, mj30day))
+
+epi_conf_alt(medcost.strat.y) # medcost.y prevalence
+epi_conf_alt(medcost.strat.n) # medcost.n prevalence
+
+      ### calculating a prevalence ratio of ment14=Y, medcost=Y vs medcost=N
+      a <- array(c(400, 956, 748, 2517), dim = c(2, 2))
+      (a1 <- epi.2by2(dat=a, method = "cross.sectional"))
+
+
+### HLTHPLN1
+
+hlthpln.strat.y <- with(subset(df, hlthpln1 == "Yes"),
+                        table(mentComp, mj30day))
+hlthpln.strat.n <- with(subset(df, hlthpln1 == "No"),
+                        table(mentComp, mj30day))
+
+
+epi_conf_alt(hlthpln.strat.n) # hlthpln.strat.n prevalence
+epi_conf_alt(hlthpln.strat.y) # hlthpln.strat.y prevalence
+
+
+### SEX
+sex.strat.m <- with(subset(df, sex == "Male"),
+                    table(mentComp, mj30day))
+sex.strat.f <- with(subset(df, sex == "Female"),
+                    table(mentComp, mj30day))
+
+epi_conf_alt(sex.strat.m) # male prevalence
+epi_conf_alt(sex.strat.f) # female prevalence
+
+sex.strat.m.medcost <- with(subset(df, sex == "Male" & medcost == "Yes"),
+                    table(mentComp, mj30day))
+
+epi_conf_alt(sex.strat.m.medcost) # male prevalence
+
+
+## AGE GROUPS
+age.strat.18 <- with(subset(df, X_age_g == "18-24"),
+                     table(mentComp, mj30day))
+age.strat.25 <- with(subset(df, X_age_g == "25-34"),
+                     table(mentComp, mj30day))
+age.strat.35 <- with(subset(df, X_age_g == "35-44"),
+                     table(mentComp, mj30day))
+age.strat.45 <- with(subset(df, X_age_g == "45-54"),
+                     table(mentComp, mj30day))
+age.strat.55 <- with(subset(df, X_age_g == "55-64"),
+                     table(mentComp, mj30day))
+
+epi_conf_alt(age.strat.18)
+epi_conf_alt(age.strat.25)
+epi_conf_alt(age.strat.35)
+epi_conf_alt(age.strat.45)
+epi_conf_alt(age.strat.55)
+
+
+### income
+
+inc.strata.sub35 <- with(subset(df, income_wa == "< $35,000"),
+                     table(mentComp, mj30day))
+
+inc.strata.35to75 <- with(subset(df, income_wa == "$35,000-$75,000"),
+                     table(mentComp, mj30day))
+
+inc.strata.75plus <- with(subset(df, income_wa == "> $75,000"),
+                     table(mentComp, mj30day))
+
+epi_conf_alt(inc.strata.sub35)
+epi_conf_alt(inc.strata.35to75)
+epi_conf_alt(inc.strata.75plus)
+
+### race and ethnicity
+race.strat.AIAN <- with(subset(df, race == "Non-Hispanic AIAN"),
+                     table(mentComp, mj30day))
+race.strat.Asian <- with(subset(df, race == "Non-Hispanic Asian"),
+                     table(mentComp, mj30day))
+race.strat.B <- with(subset(df, race == "Non-Hispanic Black or African American"),
+                     table(mentComp, mj30day))
+race.strat.Hisp <- with(subset(df, race == "Hispanic, Latino/a, or Spanish origin"),
+                     table(mentComp, mj30day))
+race.strat.NHPI <- with(subset(df, race == "Non-Hispanic NHPI"),
+                     table(mentComp, mj30day))
+race.strat.Mult <- with(subset(df, race == "Non-Hispanic two or more races"),
+                     table(mentComp, mj30day))
+race.strat.othr <- with(subset(df, race == "Non-Hispanic other race"),
+                     table(mentComp, mj30day))
+race.strat.Wte <- with(subset(df, race == "Non-Hispanic White"),
+                     table(mentComp, mj30day))
+
+epi_conf_alt(race.strat.AIAN)
+epi_conf_alt(race.strat.Asian)
+epi_conf_alt(race.strat.B)
+epi_conf_alt(race.strat.Hisp)
+epi_conf_alt(race.strat.NHPI)
+epi_conf_alt(race.strat.Mult)
+epi_conf_alt(race.strat.othr)
+epi_conf_alt(race.strat.Wte)
+
+```
+
