@@ -351,7 +351,7 @@ label(df$curSmk) <- "Tobacco smoking status"
 # Creating cannabis usage label
 label(df$mj30day) <- "Cannabis use in past month"
 
-save(df, file = "data/WA_2015_2019_BRFSS_Clean.Rda")
+save(df, file = "data/WA_2015_2019_BRFSS_Clean.Rds")
 
 ```
 

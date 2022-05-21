@@ -44,7 +44,7 @@ db <- svydesign(
 # main table 1 by current vs non-current cannabis use 
 t1 <- tbl_svysummary(db, by = mj30day, 
                include = c(X_age_g, sex, race, edu, income_wa, hlthpln1, medcost, mentComp, curAlc, curSmk),
-               statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
+               statistic = list(everything() ~ "{n_unweighted} ({p_unweighted}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
   add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
   modify_caption("**Table 1. Past Month Cannabis User Characteristics**") %>%
@@ -112,31 +112,30 @@ for (y in covariates) {
   }
 }
 
-#label(df[,y])
 # Adding a column for the factored variables
 adj.PR$level <- NA
 adj.PR <- adj.PR[, c("level", "term", "estimate", "conf.low", "conf.high")]
 
 # Manually assign variable labels
-# adj.PR[1,1] <- "Crude"
+adj.PR[1,1] <- ""
 adj.PR[2:3,1] <- "Gender"
-# adj.PR[4,1] <- "Age group (years)"
-# adj.PR[5,1] <- "Education"
-# adj.PR[6,1] <- "Household Income"
+adj.PR[4,1] <- ""
+adj.PR[5,1] <- ""
+adj.PR[6,1] <- ""
 adj.PR[7:8,1] <- "Delayed medical care due to cost"
 adj.PR[9:10,1] <- "Health coverage"
-# adj.PR[11,1] <- "Alcohol consumption"
-# adj.PR[12,1] <- "Tobacco smoking status"
- 
+adj.PR[11,1] <- ""
+adj.PR[12,1] <- ""
+
 ```
 
 ```{r}
 #### Creating the table 2 ####
 
 adj.PR <- adj.PR %>%
-  gt(rowname_col = "term") %>%  
+  gt(rowname_col = "term", groupname_col = "level") %>%  
   fmt_number(
-    columns = 2:4,
+    columns = 3:5,
     decimals = 2
   ) %>%
   tab_header(
