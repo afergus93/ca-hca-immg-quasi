@@ -7,7 +7,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 # Set working directory
-setwd("C:/wa-cannabis-hca")
+setwd("/Users/aaron-mbp/R-directory/wa-cannabis-hca-main")
 
 # Clear workspace 
 rm(list = ls())
@@ -35,11 +35,12 @@ load(file = "data/WA_2015_2019_BRFSS_Clean.Rda")
 ```
 
 ```{r}
-#################################
+
+############################################
 #
-# CALCULATING PREVALENCES & 95%CI
+# CALCULATING UNWEIGHTED PREVALENCES & 95%CI
 #
-#################################
+############################################
 
 
 # defining a function to calculate prevalences from a 2x2 table in few lines
@@ -184,3 +185,69 @@ epi_conf_alt(race.strat.Wte)
 
 ```
 
+
+```{r}
+
+#################################################
+#
+# CALCULATING SURVEY WEIGHTED PREVALENCES & 95%CI
+#
+#################################################
+
+library(srvyr) # install.packages("srvyr")
+
+# define survey options
+options(survey.lonely.psu = "adjust")
+db <- svydesign(
+  id = ~1,
+  strata = ~X_ststr,
+  weights = ~X_llcpwt,
+  data = df, 
+  nest = TRUE) 
+
+db_svy <- srvyr::as_survey_design(.data = df, ids = 1, strata = X_ststr, weights = X_llcpwt)
+
+# overall
+db_svy %>% group_by(mentComp, mj30day) %>% 
+  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
+  filter(mj30day == "Cannabis use in past month")
+
+# year
+db_svy %>% group_by(mentComp, year, mj30day) %>% 
+  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
+  filter(mj30day == "Cannabis use in past month") %>% 
+  arrange(desc(-year))
+
+# medcost prevalences
+db_svy %>% group_by(mentComp, medcost, mj30day) %>% 
+  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
+  filter(mj30day == "Cannabis use in past month")
+
+# hlthpln1
+db_svy %>% group_by(mentComp, hlthpln1, mj30day) %>% 
+  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
+  filter(mj30day == "Cannabis use in past month" & hlthpln1 != is.na(NA))
+
+# SEX
+db_svy %>% group_by(mentComp, sex, mj30day) %>% 
+  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>% 
+  filter(mj30day == "Cannabis use in past month" & sex != is.na(NA))
+
+# AGE
+db_svy %>% group_by(mentComp, X_age_g, mj30day) %>% 
+  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
+  filter(mj30day == "Cannabis use in past month")
+
+# race & ethnicity
+db_svy %>% group_by(mentComp, race,  mj30day) %>% 
+  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
+  filter(mj30day == "Cannabis use in past month")
+
+
+## overall
+# svymean(~mj30day01, design =db, na.rm = TRUE)
+# with(subset(db,year == 2015), svymean(~mj30day01, design = db, na.rm=TRUE))
+# svymean(~mj30day01, design = with(subset(db, year == 2015)), na.rm = TRUE)  
+
+
+```
