@@ -164,11 +164,18 @@ df$mjpast30[df$mjpast30 == 77 | df$mjpast30 == 99] <- NA
 #### Dropping All Observations Where MJ or HCA is NA ####
 
 df <- df %>%
-  filter(!is.na(mj30day) & !is.na(medcost) & !is.na(X_ment14d)) %>% # filter out any missingness associated with exposure/outcome
+  filter(!is.na(mj30day)) %>% # filter out any missingness associated with exposure/outcome
   rename(zipcodeTemp1 = zipcode, zipcodeTemp2 = zipcode1) %>% # Rename zipcode variables
   mutate(zipcode = coalesce(zipcodeTemp1, zipcodeTemp2)) %>% # Combine the zipcode variables across the two columns
   select(-c(zipcodeTemp1, zipcodeTemp2)) %>% # Drop old zipcode variables
   select(zipcode, everything()) # Move updated variable to the beginning of the dataframe
+
+df <- df %>%
+  filter(!is.na(X_ment14d))
+
+df <- df %>%
+  filter(!is.na(medcost) )
+
 
 # summary(df)
 
