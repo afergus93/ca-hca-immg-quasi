@@ -25,12 +25,10 @@ library(kableExtra)
 library(gtsummary)
 library(gt)
 library(broom)
+library(htmlTable)
 
-# load in dataset saved from WA_Can_HCA_DtaMngmt_Backup file
-load(file = "data/WA_2015_2019_BRFSS_Clean.Rda")
-
-
-
+# load in dataset created from WA_Can_HCA_DtaMngmt_Backup file
+load(file = "data/WA_2015_2019_BRFSS_Clean.Rds")
 
 ```
 
@@ -78,6 +76,13 @@ epi_conf_alt(overall.2016)
 epi_conf_alt(overall.2017)
 epi_conf_alt(overall.2018)
 epi_conf_alt(overall.2019)
+
+
+### dHCA
+dHCA.strat.y <- with(subset(df, dHCA == "Yes"), table(mentComp, mj30day))
+dHCA.strat.n <- with(subset(df, dHCA == "No"), table(mentComp, mj30day))
+epi_conf_alt(dHCA.strat.y) # dHCA.y prevalence
+epi_conf_alt(dHCA.strat.n) # dHCA.n prevalence
 
 
 ### MEDCOST
@@ -183,6 +188,8 @@ epi_conf_alt(race.strat.Mult)
 epi_conf_alt(race.strat.othr)
 epi_conf_alt(race.strat.Wte)
 
+
+
 ```
 
 
@@ -208,41 +215,72 @@ db <- svydesign(
 db_svy <- srvyr::as_survey_design(.data = df, ids = 1, strata = X_ststr, weights = X_llcpwt)
 
 # overall
-db_svy %>% group_by(mentComp, mj30day) %>% 
-  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
-  filter(mj30day == "Cannabis use in past month")
+tab_mh_cann_overall <- db_svy %>% group_by(mentComp, mj30day) %>% 
+  summarize(proportion = survey_mean(vartype=c("ci"))) %>%
+  filter(mj30day == "Cannabis use in past month") %>%
+  mutate(across(where(is.numeric), round, 3)) %>% 
+  mutate(across(where(is.numeric), prod, 100)) 
 
 # year
 db_svy %>% group_by(mentComp, year, mj30day) %>% 
-  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
+  summarize(proportion = survey_mean(vartype=c("ci"))) %>%
   filter(mj30day == "Cannabis use in past month") %>% 
   arrange(desc(-year))
 
+# dHCA prevalences
+tab_dHCA_overall <- db_svy %>% group_by(mentComp, dHCA, mj30day) %>% 
+  summarize(proportion = survey_mean(vartype=c("ci"))) %>%
+  filter(mj30day == "Cannabis use in past month") %>% 
+  mutate(across(where(is.numeric), round, 3)) %>% 
+  mutate(across(where(is.numeric), prod, 100)) 
+
+
 # medcost prevalences
 db_svy %>% group_by(mentComp, medcost, mj30day) %>% 
-  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
-  filter(mj30day == "Cannabis use in past month")
+  summarize(proportion = survey_mean(vartype=c("ci"))) %>%
+  filter(mj30day == "Cannabis use in past month") 
 
 # hlthpln1
 db_svy %>% group_by(mentComp, hlthpln1, mj30day) %>% 
-  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
+  summarize(proportion = survey_mean(vartype=c("ci"))) %>%
   filter(mj30day == "Cannabis use in past month" & hlthpln1 != is.na(NA))
 
 # SEX
 db_svy %>% group_by(mentComp, sex, mj30day) %>% 
-  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>% 
+  summarize(proportion = survey_mean(vartype=c("ci"))) %>% 
   filter(mj30day == "Cannabis use in past month" & sex != is.na(NA))
 
 # AGE
 db_svy %>% group_by(mentComp, X_age_g, mj30day) %>% 
-  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
+  summarize(proportion = survey_mean(vartype=c("ci"))) %>%
   filter(mj30day == "Cannabis use in past month")
 
 # race & ethnicity
-db_svy %>% group_by(mentComp, race,  mj30day) %>% 
-  summarize(proportion = survey_mean(vartype=c("se", "ci"))) %>%
-  filter(mj30day == "Cannabis use in past month")
+tab_RE <- db_svy %>% group_by(race, mentComp, mj30day) %>% 
+  summarize(proportion = survey_mean(vartype=c("ci"))) %>%
+  filter(mj30day == "Cannabis use in past month") %>%
+  mutate(across(where(is.numeric), round, 3)) %>% 
+  mutate(across(where(is.numeric), prod, 100)) 
 
+# race & ethnicity & medcost
+tab_RE_dHCA <- db_svy %>% group_by(race, mentComp, dHCA,  mj30day) %>% 
+  summarize(proportion = survey_mean(vartype=c("ci"))) %>%
+  filter(mj30day == "Cannabis use in past month") %>% 
+  arrange(desc(-race)) %>%
+  mutate(across(where(is.numeric), round, 3)) %>% 
+  mutate(across(where(is.numeric), prod, 100)) 
+
+
+wa_cann_mh_overall <- htmlTable(tab_mh_cann_overall)
+wa_cann_dHCA_overall <- htmlTable(tab_dHCA_overall)
+wa_cann_tab_RE <- htmlTable(tab_RE)
+wa_cann_tab_RE_dHCA<- htmlTable(tab_RE_dHCA)
+
+
+save_kable(wa_cann_mh_overall, file = "wa_cann_mh_overall.html")
+save_kable(wa_cann_dHCA_overall, file = "wa_cann_dHCA_overall.html")
+save_kable(wa_cann_tab_RE, file = "wa_cann_tab_RE.html")
+save_kable(wa_cann_tab_RE_dHCA, file = "wa_cann_tab_RE_dHCA.html")
 
 ## overall
 # svymean(~mj30day01, design =db, na.rm = TRUE)
