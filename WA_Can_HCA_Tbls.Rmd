@@ -44,11 +44,10 @@ db <- svydesign(
   nest = TRUE) 
 
 # main table 1 by current vs non-current cannabis use 
-t1 <- tbl_svysummary(db, by = mj30day, 
+t1 <- tbl_svysummary(db, by = mj30day, percent = "row",
                include = c(X_age_g, sex, race, edu, income_wa, dHCA, mentComp, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p_unweighted}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
-  add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
   modify_caption("**Table 1. Past Month Cannabis User Characteristics**") %>%
   bold_labels()
 
@@ -57,20 +56,18 @@ t1 %>%
   gtsave("Table1_CA_WA.html")
 
 # alternative table 1's for demographic exploration
-t1.alt.medcost <- tbl_svysummary(db, by = dHCA, 
+t1.alt.medcost <- tbl_svysummary(db, by = dHCA, percent = "row",
                include = c(X_age_g, sex, race, edu, income_wa, mj30day, mentComp, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
-  add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
   modify_caption("**Table 1Alt. dHCA Characteristics**") %>%
   bold_labels()
 
 
-t1.alt.ment14d <- tbl_svysummary(db, by = mentComp, 
+t1.alt.ment14d <- tbl_svysummary(db, by = mentComp, percent = "row",
                include = c(X_age_g, sex, race, edu, income_wa, dHCA, mj30day, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
-  add_overall(last = TRUE, col_label = "**Total**, N={N_unweighted}") %>%
   modify_caption("**Table 1Alt. dHCA Characteristics**") %>%
   bold_labels()
 
@@ -130,6 +127,8 @@ adj.PR <- adj.PR %>%
 # Save the table
 adj.PR %>%
   gtsave("Table2_CA_WA.html")
+
+
 
 ```
 
@@ -206,7 +205,11 @@ cost.PR <- cost.PR %>%
   cols_label(
     estimate = "Prevalance Ratio",
     conf.low = "Lower",
-    conf.high = "Upper")
+    conf.high = "Upper") %>%
+  tab_style(
+    style = list(cell_text(weight = "bold")),
+    locations = cells_row_groups()
+  )
 
 # Save the table
 cost.PR %>%
