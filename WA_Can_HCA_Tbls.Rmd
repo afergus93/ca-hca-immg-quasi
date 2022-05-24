@@ -110,7 +110,13 @@ adj.PR[2,1] <- "Adjusted" # Assign variable label to the second row
 #### Creating the table 2 ####
 
 adj.PR <- adj.PR %>%
-  gt(rowname_col = "term") %>%  
+  gt(rowname_col = "term") %>% 
+  tab_footnote(
+    footnote = "Prevalance ratio adjusted for gender, income, and current tobacco smoking status.",
+    locations = cells_body(
+      columns = estimate,
+      rows = 2)
+  ) %>%
   fmt_number(
     columns = 2:4,
     decimals = 2
@@ -122,7 +128,7 @@ adj.PR <- adj.PR %>%
   cols_label(
     estimate = "Prevalance Ratio",
     conf.low = "Lower",
-    conf.high = "Upper")
+    conf.high = "Upper") 
 
 # Save the table
 adj.PR %>%
