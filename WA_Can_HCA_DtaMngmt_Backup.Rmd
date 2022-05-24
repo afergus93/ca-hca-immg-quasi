@@ -176,6 +176,9 @@ df <- df %>%
 df <- df %>%
   filter(!is.na(medcost) )
 
+df <- df %>%
+  filter(!is.na(hlthpln1))
+
 
 # summary(df)
 
@@ -223,6 +226,10 @@ df$income_wa[df$income_wa > 5 & df$income_wa < 8] <- 2 # Income between $25,000 
 df$income_wa[df$income_wa >= 8] <- 3 # Income >$75,000
 df$income_wa[is.na(df$income_wa)] <- NA
 
+# Creating difficulty accesssing care variable
+df$dHCA[df$medcost == 1 | df$hlthpln1 == 2] <- 1 # difficulty accessing care
+df$dHCA[df$medcost == 2 & df$hlthpln1 == 1] <- 2 # No difficulty accessing care
+ 
 ```
 
 ```{r}
@@ -290,12 +297,6 @@ df$curAlc <- factor(df$curAlc,
                       labels = c("Within past week", "Within past month", "None in past month"),
                       exclude = NULL)
 
-# Current Alc. Factors
-df$curAlcSmk <- factor(df$curAlcSmk,
-                      levels = c(1,2),
-                      labels = c("Yes", "No"),
-                      exclude = NULL)
-
 # Mental Health Factors
 df$mentComp <- factor(df$mentComp,
                       levels = c(1,2),
@@ -312,7 +313,13 @@ df$hlthpln1 <- factor(df$hlthpln1,
 df$medcost <- factor(df$medcost,
                       levels = c(1,2),
                       labels = c("Yes", "No"),
-                      exclude = NULL)
+                      exclude = NULL) 
+
+# Med Cost Factor
+df$dHCA <- factor(df$dHCA,
+                      levels = c(1,2),
+                      labels = c("Yes", "No"),
+                      exclude = NULL) 
 
 # Cannabis Use Factor
 df$mj30day <- factor(df$mj30day,
@@ -357,6 +364,9 @@ label(df$curSmk) <- "Tobacco smoking status"
 
 # Creating cannabis usage label
 label(df$mj30day) <- "Cannabis use in past month"
+
+# Creating difficulty accessing care label
+label(df$dHCA) <- "Difficulty accessing healthcare"
 
 save(df, file = "data/WA_2015_2019_BRFSS_Clean.Rds")
 
