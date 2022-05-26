@@ -44,10 +44,10 @@ db <- svydesign(
   nest = TRUE) 
 
 # main table 1 by current vs non-current cannabis use 
-t1 <- tbl_svysummary(db, by = mj30day, percent = "row",
+t1 <- tbl_svysummary(db, by = mj30day, percent = "row", digits = everything() ~ 0,
                include = c(X_age_g, sex, race, edu, income_wa, dHCA, mentComp, curAlc, curSmk),
-               statistic = list(everything() ~ "{n_unweighted} ({p_unweighted}%)")) %>%
-  modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
+               statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
+  modify_header(all_stat_cols(FALSE) ~ "**{level}**, N={n_unweighted}") %>%
   modify_caption("**Table 1. Past Month Cannabis User Characteristics**") %>%
   bold_labels()
 
@@ -56,20 +56,28 @@ t1 %>%
   gtsave("Table1_CA_WA.html")
 
 # alternative table 1's for demographic exploration
-t1.alt.medcost <- tbl_svysummary(db, by = dHCA, percent = "row",
+t1.alt.medcost <- tbl_svysummary(db, by = dHCA, percent = "row", digits = everything() ~ 0,
                include = c(X_age_g, sex, race, edu, income_wa, mj30day, mentComp, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
   modify_caption("**Table 1Alt. dHCA Characteristics**") %>%
   bold_labels()
 
+t1.alt.medcost %>%
+  as_gt() %>%
+  gtsave("Table1_Med_CA_WA.html")
 
-t1.alt.ment14d <- tbl_svysummary(db, by = mentComp, percent = "row",
+
+t1.alt.ment14d <- tbl_svysummary(db, by = mentComp, percent = "row", digits = everything() ~ 0,
                include = c(X_age_g, sex, race, edu, income_wa, dHCA, mj30day, curAlc, curSmk),
                statistic = list(everything() ~ "{n_unweighted} ({p}%)")) %>%
   modify_header(stat_by = "**{level}**, N={n_unweighted}") %>%
-  modify_caption("**Table 1Alt. dHCA Characteristics**") %>%
+  modify_caption("**Table 1Alt. Mental Health Characteristics**") %>%
   bold_labels()
+
+t1.alt.ment14d %>%
+  as_gt() %>%
+  gtsave("Table1_Ment_CA_WA.html")
 
 ```
 
@@ -145,10 +153,17 @@ adj.PR %>%
 cost.PR <- NULL
 
 # Get the dHCA strata specific PR's
-dHCA.strat <- table(df$mentComp, df$mj30day, df$dHCA) # create a 2by2 tables based on racial groupings
+ovr.strat.y <- with(subset(df, dHCA == "Yes"),
+          table(mentComp, mj30day, income_wa))
+ovr.strat.n <- with(subset(df, dHCA == "No"),
+          table(mentComp, mj30day, income_wa))
+
 cost.PR <- rbind(cost.PR,
-                tidy(epi.2by2(dHCA.strat, method = "cross.sectional")) %>%
-                  filter(term == "PR.strata.wald")) 
+                tidy(epi.2by2(ovr.strat.y, method = "cross.sectional")) %>%
+                  filter(term == "PR.mh.wald")) 
+cost.PR <- rbind(cost.PR,
+                tidy(epi.2by2(ovr.strat.n, method = "cross.sectional")) %>%
+                  filter(term == "PR.mh.wald")) 
 
 # # get the dHCA strata specific PR's by wt.
 # asian.strat <- with(subset(df, race == "Non-Hispanic Asian"),
@@ -165,29 +180,39 @@ cost.PR <- rbind(cost.PR,
 #                   filter(term == "PR.strata.wald")) 
 
 # get the dHCA strata specific PR's by hisp.
-hisp.strat <- with(subset(df, race == "Hispanic, Latino/a, or Spanish origin"),
-          table(mentComp, mj30day, dHCA))
+hisp.strat.y <- with(subset(df, dHCA == "Yes" & race == "Hispanic, Latino/a, or Spanish origin"),
+          table(mentComp, mj30day, income_wa))
+hisp.strat.n <- with(subset(df, dHCA == "No" & race == "Hispanic, Latino/a, or Spanish origin"),
+          table(mentComp, mj30day, income_wa))
+
 cost.PR <- rbind(cost.PR,
-                tidy(epi.2by2(hisp.strat, method = "cross.sectional")) %>%
-                  filter(term == "PR.strata.wald")) 
+                tidy(epi.2by2(hisp.strat.y, method = "cross.sectional")) %>%
+                  filter(term == "PR.mh.wald")) 
+cost.PR <- rbind(cost.PR,
+                tidy(epi.2by2(hisp.strat.n, method = "cross.sectional")) %>%
+                  filter(term == "PR.mh.wald")) 
 
 # get the dHCA strata specific PR's by wt.
-wt.strat <- with(subset(df, race == "Non-Hispanic White"),
-                    table(mentComp, mj30day, dHCA))
+wt.strat.y <- with(subset(df, dHCA == "Yes" & race == "Non-Hispanic White"),
+          table(mentComp, mj30day, income_wa))
+wt.strat.n <- with(subset(df, dHCA == "No" & race == "Non-Hispanic White"),
+          table(mentComp, mj30day, income_wa))
+
 cost.PR <- rbind(cost.PR,
-                tidy(epi.2by2(wt.strat, method = "cross.sectional")) %>%
-                  filter(term == "PR.strata.wald")) 
+                tidy(epi.2by2(wt.strat.y, method = "cross.sectional")) %>%
+                  filter(term == "PR.mh.wald")) 
+cost.PR <- rbind(cost.PR,
+                tidy(epi.2by2(wt.strat.n, method = "cross.sectional")) %>%
+                  filter(term == "PR.mh.wald")) 
 
 # creating headers and lables
-cost.PR[1,1] <- "Yes"
-cost.PR[2,1] <- "No"
-cost.PR[c("3","5"),1] <- "Difficulty accessing healthcare"
-cost.PR[c("4","6"),1] <- "No difficulty accessing healthcare"
+cost.PR[c("1","3","5"),1] <- "Difficulty accessing healthcare"
+cost.PR[c("2","4","6"),1] <- "Did not have difficulty accessing healthcare"
 
 cost.PR$new <- NA # Add blank column
 cost.PR <- cost.PR[,c(5,1:4)] # Reorder columns
 
-cost.PR$new[1:2] <- "Difficulty accessing healthcare"
+cost.PR$new[1:2] <- "All adults"
 # cost.PR$new[3:4] <- "Non-Hispanic Asian"
 # cost.PR$new[5:6] <- "Non-Hispanic Black or African American"
 cost.PR$new[3:4] <- "Hispanic, Latino/a, or Spanish origin"
@@ -205,7 +230,7 @@ cost.PR <- cost.PR %>%
     decimals = 2
   ) %>%
   tab_header(
-    title = md("Table 3: Prevalance Ratios of Cannabis Usage by Race/Ethnicity"),
+    title = md("Table 3: Prevalance Ratios of Cannabis Usage by Race/Ethnicity Adjusted for Income"),
     subtitle = md("14+ Poor Mental Health Days vs. 0-13 Days of Poor Mental Health Days")) %>%
   tab_spanner(label = "95% Confidence Interval", columns = c(conf.low, conf.high)) %>%
   cols_label(
@@ -222,4 +247,20 @@ cost.PR %>%
   gtsave("Table3_CA_WA.html")
 
 ```
+
+```{r}
+
+d <- as.data.frame(df$mjpast30[df$mjpast30 != 88])
+d <- na.omit(d)
+
+ci(d$`df$mjpast30[df$mjpast30 != 88]`, confidence = 0.95)
+
+
+ovr.strat.y <- with(subset(df, dHCA == "Yes"),
+          table(curSmk))
+ovr.strat.n <- with(subset(df, dHCA == "No"),
+          table(curSmk))
+
+```
+
 
