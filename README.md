@@ -1,7 +1,8 @@
-# Mental Health Disparities in Cannabis Use and Difficulty Accessing Healthcare Among Adults in Washington State, 2015-2019
-Authors: Serena Santoni, Daniel J Cockson, Aaron JR Ferguson
+# Did California’s 2020 Medi-Cal Expansion Improve Health Insurance Coverage and Mental Health Outcomes Among Noncitizen Young Adults? A Population-based, Quasi-Experimental Study
 
-Cross-sectional analysis of the association between poor mental health days, difficulty accessing healthcare and cannabis use among adults in Washington State.
+Authors: Aaron JR Ferguson
+
+This study will examine the effect of the 2020 Medi-cal policy expansion using a quasi-experimental approach to assess the impacts on healthcare access and mental health outcome among underserved noncitizen young adults in California.
 
 ## Primary Aim
 More info coming soon!
