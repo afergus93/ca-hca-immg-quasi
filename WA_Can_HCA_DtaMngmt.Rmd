@@ -1,5 +1,5 @@
 ---
-title: "WA_Can_HCA_DtaMngmt"
+title: "CA_HCA_immg_quasi_DtaMngmt"
 output: html_document
 ---
 
@@ -7,7 +7,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 # Set working directory
-setwd("C:/wa-cannabis-hca")
+setwd("C:/ca-hca-immg-quasi")
 
 # Clear workspace 
 rm(list = ls())
@@ -28,7 +28,7 @@ library(broom)
 
 
 ```{r}
-#### Load in the WA-BRFSS Data ####
+#### Load in the CA-CHIS Data ####
 
 # WRITING THE TEMP FILE IS ONLY NECCESARY IF YOU DO NOT HAVE THE FILE IN CSV FORMAT
 
